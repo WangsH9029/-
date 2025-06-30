@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="9d09bd49-5f3e-449b-ab26-c952db5f6e31" name="Changes" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="HTML File" />
+        <option value="JavaScript File" />
+        <option value="Interface" />
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/springboot-html/src/main/resources/templates/index.html" root0="FORCE_HIGHLIGHTING" />
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="customMavenHome" value="D:\apache-maven-3.6.3" />
+        <option name="localRepository" value="D:\apache-maven-3.6.3\maven-repository" />
+        <option name="mavenHomeTypeForPersistence" value="CUSTOM" />
+        <option name="userSettingsFile" value="D:\apache-maven-3.6.3\conf\settings.xml" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
+  <component name="ProjectId" id="2jiVUfBoUuIsZ6PMnimaXERZRRl" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.SpringbootHtmlApplication.executor": "Debug",
+    "DefaultHtmlFileTemplate": "HTML File",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "Spring Boot.SpringbootHtmlApplication.executor": "Run",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/apache-maven-3.6.3/maven-repository/springboot-html",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "MavenSettings",
+    "vue.rearranger.settings.migration": "true"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "mysql_aurora_aws",
+      "mysql"
+    ]
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\apache-maven-3.6.3\maven-repository\springboot-html\springboot-html\src\main\java\com\ywtong\springboothtml\entity" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\apache-maven-3.6.3\maven-repository\springboot-html\springboot-html\src\main\resources\static\css" />
+      <recent name="D:\apache-maven-3.6.3\maven-repository\springboot-html\springboot-html\src\main\resources\static\image" />
+    </key>
+    <key name="CopyClassDialog.RECENTS_KEY">
+      <recent name="com.ywtong.springboothtml.controller.sys" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Spring Boot.SpringbootHtmlApplication">
+    <configuration name="SpringbootHtmlApplication" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.ywtong.springboothtml.SpringbootHtmlApplication" />
+      <module name="springboot-html" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.ywtong.springboothtml.Service.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="SpringbootHtmlApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+      <module name="springboot-html" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.ywtong.springboothtml.SpringbootHtmlApplication" />
+      <option name="UPDATE_ACTION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="Application.SpringbootHtmlApplication" />
+      <item itemvalue="Spring Boot.SpringbootHtmlApplication" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Application.SpringbootHtmlApplication" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9f38398b9061-39b83d9b5494-intellij.indexing.shared.core-IU-241.15989.150" />
+        <option value="bundled-js-predefined-1d06a55b98c1-91d5c284f522-JavaScript-IU-241.15989.150" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9d09bd49-5f3e-449b-ab26-c952db5f6e31" name="Changes" comment="" />
+      <created>1721869902119</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1721869902119</updated>
+      <workItem from="1721870272460" duration="23474000" />
+      <workItem from="1721956565336" duration="24755000" />
+      <workItem from="1722214547028" duration="17033000" />
+      <workItem from="1722237718750" duration="9255000" />
+      <workItem from="1722301557381" duration="26502000" />
+      <workItem from="1722474331382" duration="25139000" />
+      <workItem from="1722560769709" duration="24284000" />
+      <workItem from="1722923325319" duration="15370000" />
+      <workItem from="1722993182876" duration="10956000" />
+      <workItem from="1723009791734" duration="16067000" />
+      <workItem from="1723078937810" duration="21845000" />
+      <workItem from="1723106578434" duration="4440000" />
+      <workItem from="1723165104530" duration="25703000" />
+      <workItem from="1723424984471" duration="9805000" />
+      <workItem from="1723511240767" duration="11326000" />
+      <workItem from="1723597018276" duration="15520000" />
+      <workItem from="1723682981629" duration="595000" />
+      <workItem from="1740386024217" duration="150000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>

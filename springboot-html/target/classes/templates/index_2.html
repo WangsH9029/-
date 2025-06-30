@@ -1,0 +1,52 @@
+<!--文件格式：html:5-->
+
+<!doctype html>
+<html lang="en">
+<head>
+    <!--头文件-->
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <!--写IndexController.java的路径-->
+    <!--涉及到绝对路径，相对路径问题：解决方法：
+    在application.yml下的spring：中添加如下：
+  web:
+    resources:
+      static-locations: classpath:/static/设置静态
+      -->
+    <script type="text/javascript" src="./js/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+<!--前端界面-->
+账号：<br>
+<input type="text" id="account" name="account"><br>
+密码：<br>
+<input type="password" id="password" name="password"><br>
+<br>
+<button id="b1" name="b1">login</button>
+
+<script>
+    $(function () {
+        $("#b1").click(function () {
+            var page="login"//IndexController.java中@RequestMapping(/login)中的内容
+            var value1=$("#account").val();
+            var value2=$("#password").val();
+            $.ajax({
+                url:page,//Ajax属性1
+                data:{account:value1,password:value2},<!--这里的名称要与界面设计html中name相同-->//Ajax属性2
+                success:function (login) {
+                    if(login.flag){
+                        alert(login.msg)
+                    }else{
+                        alert(login.msg)
+                    }
+                }//Ajax属性3
+            })
+        })
+    })
+</script>
+</body>
+</html>

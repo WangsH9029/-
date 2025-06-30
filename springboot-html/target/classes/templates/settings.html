@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>系统设置</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>body{margin:0;padding:0;}.content-container{margin:20px;padding:20px;}</style>
+</head>
+<body>
+<script src="//unpkg.com/vue@2/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<div id="app">
+    <div class="content-container">
+        <el-card>
+            <div slot="header"><span>系统设置</span></div>
+            <el-form label-width="120px">
+                <el-form-item label="平台名称"><el-input value="农产品交易平台"></el-input></el-form-item>
+                <el-form-item label="管理员邮箱"><el-input value="admin@test.com"></el-input></el-form-item>
+                <el-form-item label="联系电话"><el-input value="123456789"></el-input></el-form-item>
+                <el-form-item>
+                    <el-button type="primary">保存设置</el-button>
+                </el-form-item>
+            </el-form>
+        </el-card>
+    </div>
+</div>
+<script>
+new Vue({el:'#app'})
+</script>
+</body>
+</html> 

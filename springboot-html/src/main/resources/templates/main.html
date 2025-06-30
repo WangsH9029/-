@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>农产品交易平台</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>
+        body { margin: 0; padding: 0; }
+        .el-header { background-color: #409EFF; color: white; line-height: 60px; }
+        .el-aside { background-color: #545c64; color: white; }
+        .el-menu { border-right: none; }
+        .content-container { padding: 20px; }
+    </style>
+</head>
+<body>
+<script src="//unpkg.com/vue@2/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<div id="app">
+    <el-container style="height: 100vh;">
+        <el-header>
+            <span style="font-size: 20px;">农产品交易平台</span>
+            <span style="float: right;">欢迎，{{username}}</span>
+        </el-header>
+        <el-container>
+            <el-aside width="200px">
+                <el-menu
+                    default-active="1"
+                    class="el-menu-vertical"
+                    background-color="#545c64"
+                    text-color="#fff"
+                    active-text-color="#ffd04b"
+                    @select="handleSelect">
+                    <el-menu-item index="1">
+                        <i class="el-icon-s-goods"></i>
+                        <span slot="title">商品管理</span>
+                    </el-menu-item>
+                    <el-menu-item index="2">
+                        <i class="el-icon-s-order"></i>
+                        <span slot="title">订单管理</span>
+                    </el-menu-item>
+                    <el-menu-item index="3">
+                        <i class="el-icon-user"></i>
+                        <span slot="title">用户管理</span>
+                    </el-menu-item>
+                    <el-menu-item index="4">
+                        <i class="el-icon-s-custom"></i>
+                        <span slot="title">农户管理</span>
+                    </el-menu-item>
+                    <el-menu-item index="5">
+                        <i class="el-icon-s-data"></i>
+                        <span slot="title">数据统计</span>
+                    </el-menu-item>
+                    <el-menu-item index="6">
+                        <i class="el-icon-setting"></i>
+                        <span slot="title">系统设置</span>
+                    </el-menu-item>
+                </el-menu>
+            </el-aside>
+            <el-main>
+                <div class="content-container">
+                    <router-view></router-view>
+                </div>
+            </el-main>
+        </el-container>
+    </el-container>
+</div>
+<script>
+new Vue({
+    el: '#app',
+    data() {
+        return {
+            username: '管理员'
+        }
+    },
+    methods: {
+        handleSelect(key) {
+            switch(key) {
+                case '1':
+                    window.location.href = '/demo/toProductList';
+                    break;
+                case '2':
+                    window.location.href = '/demo/toOrderList';
+                    break;
+                case '3':
+                    window.location.href = '/demo/toUserList';
+                    break;
+                case '4':
+                    window.location.href = '/demo/toFarmerList';
+                    break;
+                case '5':
+                    window.location.href = '/demo/toStatistics';
+                    break;
+                case '6':
+                    window.location.href = '/demo/toSettings';
+                    break;
+            }
+        }
+    }
+})
+</script>
+</body>
+</html> 

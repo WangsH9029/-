@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>商品分类</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>body{margin:0;padding:0;}.content-container{margin:20px;padding:20px;}</style>
+</head>
+<body>
+<script src="//unpkg.com/vue@2/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<div id="app">
+    <div class="content-container">
+        <el-card>
+            <div slot="header"><span>商品分类</span></div>
+            <el-form :inline="true" :model="form" style="margin-bottom:20px">
+                <el-form-item label="分类名称"><el-input v-model="form.name"></el-input></el-form-item>
+                <el-form-item><el-button type="primary" @click="addCategory">添加</el-button></el-form-item>
+            </el-form>
+            <el-table :data="categories" style="width:100%">
+                <el-table-column prop="name" label="分类名称"></el-table-column>
+                <el-table-column label="操作" width="120">
+                    <template slot-scope="scope">
+                        <el-button type="text" size="small" style="color:red">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-card>
+    </div>
+</div>
+<script>
+new Vue({
+    el:'#app',
+    data(){return{form:{name:''},categories:[{name:'粮食'},{name:'水果'}]}},
+    methods:{addCategory(){if(this.form.name){this.categories.push({name:this.form.name});this.form.name='';}}
+    }
+})
+</script>
+</body>
+</html> 

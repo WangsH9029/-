@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>订单列表</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>body{margin:0;padding:0;}.content-container{margin:20px;padding:20px;}</style>
+</head>
+<body>
+<script src="//unpkg.com/vue@2/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<div id="app">
+    <div class="content-container">
+        <el-card>
+            <div slot="header"><span>订单列表</span></div>
+            <el-table :data="orders" style="width:100%">
+                <el-table-column prop="orderNo" label="订单编号" width="180"></el-table-column>
+                <el-table-column prop="customer" label="客户名称" width="120"></el-table-column>
+                <el-table-column prop="amount" label="订单金额" width="120"></el-table-column>
+                <el-table-column prop="status" label="订单状态" width="120">
+                    <template slot-scope="scope">
+                        <el-tag :type="scope.row.status==='已完成'?'success':'warning'">{{scope.row.status}}</el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="createTime" label="创建时间"></el-table-column>
+                <el-table-column label="操作" width="120">
+                    <template slot-scope="scope">
+                        <el-button type="text" size="small">详情</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-card>
+    </div>
+</div>
+<script>
+new Vue({
+    el:'#app',
+    data(){return{orders:[{orderNo:'DD20240101001',customer:'张三',amount:'¥1,280',status:'已完成',createTime:'2024-01-01 10:00:00'},{orderNo:'DD20240101002',customer:'李四',amount:'¥2,580',status:'待发货',createTime:'2024-01-01 11:30:00'}]}},
+})
+</script>
+</body>
+</html> 

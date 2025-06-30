@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>商品列表</title>
+    <link rel="stylesheet" type="text/css" href="/static/plugins/jquery-easyui-1.7.0/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="/static/plugins/jquery-easyui-1.7.0/themes/icon.css">
+    <script type="text/javascript" src="/static/plugins/jquery-easyui-1.7.0/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/plugins/jquery-easyui-1.7.0/jquery.easyui.min.js"></script>
+</head>
+<body>
+    <div class="easyui-panel" style="padding:5px;">
+        <a href="javascript:void(0)" class="easyui-linkbutton" onclick="doSearch()">查询</a>
+        <input class="easyui-textbox" id="searchKeyword" style="width:200px" data-options="prompt:'输入商品名称...'">
+        <select class="easyui-combobox" id="searchCategory" style="width:100px">
+            <option value="">全部分类</option>
+            <option value="vegetables">蔬菜</option>
+            <option value="fruits">水果</option>
+            <option value="grains">粮油</option>
+        </select>
+    </div>
+    <table id="dg" class="easyui-datagrid" style="width:100%;height:500px"
+            url="/api/product/search"
+            toolbar="#toolbar"
+            pagination="true"
+            rownumbers="true"
+            fitColumns="true"
+            singleSelect="true">
+        <thead>
+            <tr>
+                <th field="name" width="50">商品名称</th>
+                <th field="category" width="50">分类</th>
+                <th field="price" width="50">价格</th>
+                <th field="stock" width="50">库存</th>
+                <th field="unit" width="50">单位</th>
+                <th field="farmerName" width="50">农户</th>
+                <th field="action" width="50" formatter="formatAction">操作</th>
+            </tr>
+        </thead>
+    </table>
+    <div id="toolbar">
+        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" plain="true" onclick="addToCart()">加入购物车</a>
+    </div>
+    <script type="text/javascript">
+        function doSearch(){
+            $('#dg').datagrid('load',{
+                keyword: $('#searchKeyword').val(),
+                category: $('#searchCategory').combobox('getValue')
+            });
+        }
+        
+        function formatAction(val,row){
+            return '<a href="javascript:void(0)" onclick="viewDetail('+row.id+')">查看详情</a>';
+        }
+        
+        function viewDetail(id){
+            // 实现查看详情的逻辑
+        }
+        
+        function addToCart(){
+            var row = $('#dg').datagrid('getSelected');
+            if (row){
+                $.post('/api/cart/add', {
+                    productId: row.id,
+                    quantity: 1
+                }, function(result){
+                    if (result.success){
+                        $.messager.show({
+                            title: '成功',
+                            msg: '已添加到购物车'
+                        });
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html> 

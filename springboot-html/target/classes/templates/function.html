@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>文件上传</title>
+</head>
+<body>
+
+<h3>文件上传</h3>
+
+<input type="file" id="fileInput" multiple>
+<button onclick="uploadFile()">上传</button>
+
+<script>
+    function uploadFile() {
+        let fileInput = document.getElementById("fileInput");
+        let files = fileInput.files;
+
+        if (files.length === 0) {
+            alert("请选择文件");
+            return;
+        }
+
+        let formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append("file", files[i]);
+        }
+
+        // 确保后端 Spring Boot 监听这个接口
+        fetch("http://localhost:8080/demo/update", {
+            method: "POST",
+            body: formData
+        })
+            .then(response => response.text())
+            .then(data => alert("上传成功: " + data))
+            .catch(error => alert("上传失败: " + error));
+    }
+</script>
+
+</body>
+</html>

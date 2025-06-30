@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>仓库管理</title>
+    <!-- import CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!--import jQuery-->
+    <script type="text/javascript" src="./js/jquery-3.6.0.min.js"></script>
+    <!--import easy-ui-->
+    <link rel="stylesheet" href="./plugins/jquery-easyui-1.7.0/themes/ui-sunny/easyui.css" type="text/css" media="all" >
+    <link rel="stylesheet" href="./plugins/jquery-easyui-1.7.0/themes/icon.css" type="text/css" media="all" >
+    <script type="text/javascript" src="./plugins/jquery-easyui-1.7.0/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="./plugins/jquery-easyui-1.7.0/locale/easyui-lang-zh_CN.js"></script>
+    <!--import element-ui-->
+    <script src="//unpkg.com/vue@2/dist/vue.js"></script>
+    <script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+    <script src="//unpkg.com/element-ui@2.15.14/lib/theme-chalk/index.css"></script>
+
+    <script type="text/javascript"></script>
+    <style>
+    body{
+        margin: 0;
+        padding: 0;
+    }
+    </style>
+</head>
+
+<body>
+<!--extend-->
+<div id="content" style="height: 670px">
+    <br>
+    <div>
+        <div id="btn" width="100%">
+            <div id="search" style="width: auto; text-align:left;margin: 5px 500px 5px 5px;display: inline">
+                厂家：
+                <input id="searchBrand" class="easyui-combobox" style="width:200px" data-options="prompt:'根据厂家搜索：'">
+                型号：
+                <input id="searchName" class="easyui-textbox" style="width:200px" data-options="prompt:'根据型号搜索：'">
+            </div>
+            <span>
+                <a id="bt3" href="#" class="easyui-linkbutton" onclick="add()" data-options="iconCls:'icon-add'">增加</a>
+                <a id="bt1" href="#" class="easyui-linkbutton" onclick="del()" data-options="iconCls:'icon-remove'">删除</a>
+                <a id="bt2" href="#" class="easyui-linkbutton" onclick="edi()" data-options="iconCls:'icon-edit'">修改</a>
+                <a id="bt4" href="#" class="easyui-linkbutton" onclick="sear()" data-options="iconCls:'icon-search'">查询</a>
+            </span>
+        </div>
+    </div>
+<!--表格-->
+    <table id="dataGrid" class="easyui-datagrid" data-options="toolbar:'#btn',fit:true,fitColumns:true"></table>
+</div>
+
+<!--编辑弹窗-->
+<!--使用form表单，method=“post”-->
+<!--enctype="multipart/form-data用于文件提交-->
+<div id="dialog" title="编辑设备" style="height: 300px;width: 600px;display: none">
+    <form id="editForm" method="post">
+        <table style="width: 100%;height: 100%">
+            <tr style="display: none">
+                <td class="tdTitle">id</td>
+                <td><input id="id" name="id" class="easyui-textbox" data-options="requires:true" style="width: 100%"></td>
+            </tr>
+            <tr>
+                <td class="tdTitle">型号</td>
+                <td><input id="name" name="name" class="easyui-textbox" data-options="requires:true" style="width: 100%"></td>
+            </tr>
+            <tr>
+                <td class="tdTitle">厂家</td>
+                <td><input id="brand" name="brand" type="text" class="easyui-combobox" style="width: 100%"></td>
+            </tr>
+            <tr>
+                <td class="tdTitle">入库日期</td>
+                <td><input id="storage_date" name="storage_date" class="easyui-datebox" style="width: 100%"></td>
+            </tr>
+            <tr>
+                <td class="tdTitle">入库状态</td>
+                <td><input id="ps" name="ps" class="easyui-textbox" style="width: 100%;height: 100px" data-options="multiline:true"></td>
+            </tr>
+        </table>
+        <div align="right" style="margin: 5px 5px">
+            <input type="button" id="confirm" value="确认">
+            <input type="button" id="cancel" value="取消">
+        </div>
+    </form>
+</div>
+
+</body>
+<!-- import Vue before Element -->
+<script src="https://unpkg.com/vue@2/dist/vue.js"></script>
+<!-- import JavaScript -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script>
+    //导航栏
+    var Main = {
+    data() {
+        return {
+            activeIndex: '1',
+            activeIndex2: '1'
+        };
+    },
+    methods: {
+        handleSelect(key, keyPath) {
+            console.log(key, keyPath);
+        }
+    }
+}
+var Ctor = Vue.extend(Main)
+new Ctor().$mount('#app')
+</script>
+<!--表格加载-->
+<script>
+    $(function(){
+        loadGrid();
+    });
+    function loadGrid(){
+        $("#dataGrid").datagrid({
+            url:"findAll",//视情况修改，“/findAll”试了很久报404
+            fit:true,//datagrid大小自适应
+            singleSelect:true,//单选模式，即一次只能选中一条记录
+            pagination:true,//分页
+            fitColumns:true,//根据列宽自适应，避免出现滚动条
+            columns:[[
+                {field:'brand',title:"厂家",width:100,align:'center',halign:'center'},
+                {field:'name',title:"型号",width:100,align:'center',halign:'center'},
+                {field:'storage_date',title:"入库日期",width:100,align:'center',halign:'center',},
+                {field:'ps',title:"状态备注",width:100,align:'center',halign:'center'},
+            ]]//具体每一列
+        });
+    }
+    /*编辑弹窗确认按钮*/
+    /*绑定form表单提交方法*/
+    $("#confirm").click(
+        function confirm() {
+            $("#editForm").form('submit',{
+                url:"saveAll",//save方法
+                OnSubmit:function () {
+                    return $(this).form('validate');//可以做检查
+                },
+                success:function (submit) {
+                    submit=JSON.parse(submit);
+                    console.log(submit);
+                    $.messager.alert("提示","已编辑","info");
+
+                    $("#dataGrid").datagrid("reload");
+                    $("#editForm").form("reset");
+                    $("#dialog").dialog('close');
+                }
+            })
+        }
+    )
+    /*编辑弹窗取消按钮*/
+    $("#cancel").click(
+        function cancel() {
+            $("#dialog").dialog('close');
+        }
+    )
+    /*添加函数*/
+    function add() {
+        $("#dialog").dialog();//打开弹窗
+
+        $('#dataGrid').datagrid('reload');
+    }
+    /*修改函数*/
+    function edi() {
+        //检查是否选中了一行
+        if($("#dataGrid").datagrid('getSelected')==null){
+            $.messager.alert("提示","当前未选中，请选择需要修改的行","info")
+        }else{
+            $("#dialog").dialog();
+            //读隐藏字
+            var value=$("#dataGrid").datagrid("getSelected").id;
+            $("#editForm").find('input[name="id"]').val(value);
+            //查找表单中名为 id 的输入框，并将其值设置为 value
+            //因此表单中的id输入框不能省略
+            $("#editForm").form("load",$("#dataGrid").datagrid('getSelected'))
+        }
+
+    }
+    /*查询函数*/
+    function sear() {
+        //取值
+        var value1=$("#searchBrand").val();
+        var value2=$("#searchName").val();
+
+        $("#dataGrid").datagrid('load',{
+            brand:value1,
+            name:value2
+        });
+        console.log(value1);
+        console.log(value2)
+    }
+    /*删除函数*/
+    function del() {
+        if($("#dataGrid").datagrid("getSelected")==null){
+            $.messager.alert("提示","当前未选中，请选择需要修改的行","info")
+        }else{
+            $.messager.confirm('确认','您确认想要删除记录吗？',function (r) {
+                if(r){
+                    var value=$("#dataGrid").datagrid("getSelected").id;
+                    $.ajax({
+                        url:"delete",
+                        data:{id:value},
+                        success:function () {
+                            $.messager.alert('确认删除');
+                            $("#dataGrid").datagrid("reload");
+                        }
+                    })
+                }
+            })
+        }
+    }
+    //厂家下拉框
+    $("#brand").combobox({
+        data:[
+            {text:'尼康',value:'尼康'},
+            {text:'佳能',value:'佳能'},
+            {text:'未知',value:'未知'}
+        ],
+        panelHeight:"100px"
+    })
+    //厂家搜索下拉框
+    $("#searchBrand").combobox({
+        data:[
+            {text:'尼康',value:'尼康'},
+            {text:'佳能',value:'佳能'},
+            {text:'未知',value:'未知'}
+        ],
+        panelHeight:"100px"
+    })
+</script>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>用户信息管理</title>
+    <script type="text/javascript" src="./js/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+    </script>
+</head>
+<body>
+
+
+<div id="btn" width="100%">
+    <div id="search" style="width: auto; text-align:left;margin: 5px 480px 5px 5px;display: inline">
+        姓名：
+        <input id="searchName" type="text" class="easyui-textbox" style="width:200px" data-options="prompt:'根据姓名搜索：'">
+        性别：
+        <input id="searchSex" class="easyui-combobox" style="width:200px" data-options="prompt:'根据性别搜索：'">
+    </div>
+    <span>
+        <a id="bt3" href="#" class="easyui-linkbutton" onclick="add()" data-options="iconCls:'icon-add'">增加</a>
+        <a id="bt1" href="#" class="easyui-linkbutton" onclick="del()" data-options="iconCls:'icon-remove'">删除</a>
+        <a id="bt2" href="#" class="easyui-linkbutton" onclick="edi()" data-options="iconCls:'icon-edit'">修改</a>
+        <a id="bt4" href="#" class="easyui-linkbutton" data-options="iconCls:'icon-search'">查询</a>
+    </span>
+</div>
+
+<div id="dialog1" title="新增员工信息" style="height: 450px;width: 1000px;display: none" data-options="iconCls:'icon-edit',buttons:'#bb',toolbar:'#tb'">
+    <form id="userForm" method="post" enctype="multipart/form-data">
+        <table id="userTable" cellpadding="0" cellspacing="0">
+            <tr style="display: none">
+                <td><input id="id" name="id" type="hidden" class="easyui-textbox" data-options="requires:true" style="width: 100%"></td>
+            </tr>
+            <tr>
+                <td class="tdTitle">姓名</td>
+                <td><input id="name" name="name" class="easyui-textbox" data-options="requires:true" style="width: 100%"></td>
+            </tr>
+            <tr>
+                <td class="tdTitle">年龄</td>
+                <td><input id="age" name="age" type="text" class="easyui-numberbox" style="width: 100%"></td>
+            </tr>
+            <tr>
+                <td class="tdTitle">性别</td>
+                <td><input id="sex" name="sex" class="easyui-combobox" style="width: 100%"></td>
+            </tr>
+            <tr>
+                <td class="tdTitle">入职日期</td>
+                <td><input id="dateBirth" name="dateBirth" class="easyui-datebox" style="width: 100%"></td>
+            </tr>
+            <!--<tr>
+                <td class="tdTitle">证件照</td>
+                <td><input id="photo" name="photo" class="easyui-filebox" style="width: 100%"></td>
+            </tr>-->
+            <tr>
+                <td class="tdTitle">工作经历</td>
+                <td><input id="introduce" name="introduce" class="easyui-textbox" style="width: 100%;height: 100px" data-options="multiline:true"></td>
+            </tr>
+        </table>
+        <style>
+            html,
+            body {
+                padding: 0;
+                margin: 0;
+                height: 99%;
+            }
+            #userTable{
+                table-layout: fixed;
+                width: 96%;
+                height: auto;
+                margin-left: 2%;
+                margin-top: 1%;
+            }
+            #userTable td{
+                height: 40px;
+                border:1px solid #e2e2e2;
+            }
+            #userTable .tdTitle{
+                background-color: #fafafa;
+                width: 15%;
+                text-align: center;
+            }
+        </style>
+    </form>
+</div>
+
+<table id="dataGrid" class="easyui-datagrid" data-options="toolbar:'#btn',fit:true,fitColumns:true">
+</table>
+
+<script>
+
+    $(function(){
+        loadGrid();
+    });
+    function loadGrid(){
+        $("#dataGrid").datagrid({
+            url:"UserWyj/findAll",
+            fit:true,//datagrid大小自适应
+            singleSelect:true,//单选模式，即一次只能选中一条记录
+            pagination:true,//分页
+            fitColumns:true,//根据列宽自适应，避免出现滚动条
+            columns:[[
+                {field:'name',title:"姓名",width:100,align:'center',halign:'center'},
+                {field:'age',title:"年龄",width:100,align:'center',halign:'center'},
+                {field:'sex',title:"性别",width:100,align:'center',halign:'center'},
+                {field:'dateBirth',title:"入职日期",width:100,align:'center',halign:'center',},
+                {field:'introduce',title:"工作经历",width:100,align:'center',halign:'center'},
+            ]]//具体每一列
+        });
+    }
+    //编辑函数
+    function edi() {
+        if($("#dataGrid").datagrid('getSelected')==null){
+            $.messager.alert("提示","当前未选中，请选择要修改的行",'info')
+        }else {
+            $("#dialog1").dialog({
+                title:'修改',
+                buttons:[{
+                    text:'保存',
+                    iconCls:'icon-save',
+                    handler:function () {
+                        $("#userForm").form('submit', {
+                            url:"UserWyj/saveUserWyj",
+                            onSubmit:function () {
+                                return $(this).form('validate');
+                            },
+                            success:function (submit) {
+                                submit=JSON.parse(submit)
+                                console.log(submit);
+                                $.messager.alert("提示",'已修改',"info");
+                                // 刷新数据网格列表
+                                $("#dataGrid").datagrid("reload");
+
+                                // 清空弹窗内容
+                                $("#userForm").form("reset");
+
+                                // 关闭弹窗
+                                $("#dialog1").window('close');
+                            }
+                        })
+                    }
+                },
+                    {
+                        text:'关闭',
+                        iconCls: 'icon-cancel',
+                        handler:function () {
+                            $("#dialog1").window('close');
+                        }
+                    }]
+            })
+            var value=$("#dataGrid").datagrid('getSelected').id;//在ajax外面提前定义
+            // 读取表单的URL
+            $('#userForm').form('clear');//清空表单
+            $('#userForm').form('load',$("#dataGrid").datagrid('getSelected'));//使用选中的数据填充表单
+            //设置隐藏字段中的主键
+            $('#userForm').find('input[name="id"]').val(value);
+        }
+    }
+    //增加函数
+    function add() {
+        $("#dialog1").dialog({
+            title:'新增',
+            buttons:[{
+                text:'保存',
+                iconCls:'icon-save',
+                handler:function () {
+                    //使用表单form的submit方法
+                    $("#userForm").form('submit', {
+                        url:"UserWyj/saveUserWyj",
+                        onSubmit:function () {
+                            return $(this).form('validate');
+                        },
+                        success:function (submit) {
+                            submit=JSON.parse(submit)
+                            console.log(submit);
+                            $.messager.alert("提示",'已新增',"info");
+                            $("#dialog1").window('close');
+
+                            // 刷新数据网格列表
+                            $("#dataGrid").datagrid("reload");
+
+                            // 清空弹窗内容
+                            $("#userForm").form("reset");
+
+                            // 关闭弹窗
+                            $("#dialog1").window('close');
+                        }
+                    })
+                }
+            },
+                {
+                    text:'关闭',
+                    iconCls: 'icon-cancel',
+                    handler:function () {
+                        $("#dialog1").window('close');
+                    }
+                }]
+        })
+    }
+    //删除函数
+    function del() {
+        //console.log($("#dataGrid").datagrid('getSelected'));
+        //console.log(value);
+        if($("#dataGrid").datagrid('getSelected')==null){
+            $.messager.alert("提示","当前未选中，请选择要删除的行",'info')
+        }else{
+            var value=$("#dataGrid").datagrid('getSelected').id;//在ajax外面提前定义
+            $.messager.confirm("确认","您确认想要删除该记录吗？",function (r) {
+                if(r){
+                    $.ajax({
+                        url:"UserWyj/del",
+                        data:{id:value},
+                        success:function () {
+                            $.messager.alert("提示","已删除",'info')
+                            // 刷新数据网格列表
+                            $("#dataGrid").datagrid("reload");
+                        }
+                    })
+                }else{
+                }
+            })
+        }
+    }
+
+    $("#textbox").textbox({
+        width:"100%",
+        prompt:"请输入："
+    })
+    //性别下拉框
+    $("#sex").combobox({
+        data:[
+            {text:'男',value:'男'},
+            {text:'女',value:'女'},
+            {text:'未知',value:'未知'}
+        ],
+        panelHeight:"100px"
+    })
+    //性别搜索下拉框
+    $("#searchSex").combobox({
+        data:[
+            {text:'男',value:'男'},
+            {text:'女',value:'女'},
+            {text:'未知',value:'未知'}
+        ],
+        panelHeight:"100px"
+    })
+
+    //当按下查询按钮，进入查询函数
+    $("#bt4").click(function () {
+        search();
+    })
+    //查询函数
+    function search() {
+        //取值
+        var value1=$("#searchName").val();
+        var value2=$("#searchSex").val();
+        //
+        $('#dataGrid').datagrid('load',{
+            name:value1,
+            sex:value2
+        });
+        console.log(value1);
+        console.log(value2);
+    }
+
+</script>
+</body>
+</html>

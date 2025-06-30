@@ -39,7 +39,37 @@
         </thead>
     </table>
     <div id="toolbar">
+        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" plain="true" onclick="openAddDialog()">新增商品</a>
+        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-edit" plain="true" onclick="openEditDialog()">编辑商品</a>
+        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true" onclick="deleteProduct()">删除商品</a>
         <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" plain="true" onclick="addToCart()">加入购物车</a>
+    </div>
+    <div id="productDialog" class="easyui-dialog" closed="true" buttons="#dlg-buttons" modal="true" style="width:400px;padding:20px 30px;">
+        <form id="productForm" method="post">
+            <input type="hidden" name="id" id="productId">
+            <div style="margin-bottom:10px">
+                <input class="easyui-textbox" name="name" id="productName" style="width:100%" data-options="label:'商品名称:',required:true">
+            </div>
+            <div style="margin-bottom:10px">
+                <input class="easyui-textbox" name="category" id="productCategory" style="width:100%" data-options="label:'分类:',required:true">
+            </div>
+            <div style="margin-bottom:10px">
+                <input class="easyui-numberbox" name="price" id="productPrice" style="width:100%" data-options="label:'价格:',required:true,precision:2">
+            </div>
+            <div style="margin-bottom:10px">
+                <input class="easyui-numberbox" name="stock" id="productStock" style="width:100%" data-options="label:'库存:',required:true">
+            </div>
+            <div style="margin-bottom:10px">
+                <input class="easyui-textbox" name="unit" id="productUnit" style="width:100%" data-options="label:'单位:'">
+            </div>
+            <div style="margin-bottom:10px">
+                <input class="easyui-textbox" name="description" id="productDescription" style="width:100%" data-options="label:'描述:'">
+            </div>
+        </form>
+    </div>
+    <div id="dlg-buttons">
+        <a href="javascript:void(0)" class="easyui-linkbutton" onclick="saveProduct()" style="width:80px">保存</a>
+        <a href="javascript:void(0)" class="easyui-linkbutton" onclick="$('#productDialog').dialog('close')" style="width:80px">取消</a>
     </div>
     <script type="text/javascript">
         function doSearch(){
@@ -71,6 +101,80 @@
                         });
                     }
                 });
+            }
+        }
+        function openAddDialog() {
+            $('#productForm')[0].reset();
+            $('#productId').val('');
+            $('#productDialog').dialog('open').dialog('setTitle', '新增商品');
+        }
+        function openEditDialog() {
+            var row = $('#dg').datagrid('getSelected');
+            if (row) {
+                $('#productForm')[0].reset();
+                $('#productId').val(row.id);
+                $('#productName').textbox('setValue', row.name);
+                $('#productCategory').textbox('setValue', row.category);
+                $('#productPrice').numberbox('setValue', row.price);
+                $('#productStock').numberbox('setValue', row.stock);
+                $('#productUnit').textbox('setValue', row.unit);
+                $('#productDescription').textbox('setValue', row.description);
+                $('#productDialog').dialog('open').dialog('setTitle', '编辑商品');
+            } else {
+                $.messager.alert('提示', '请先选择要编辑的商品', 'info');
+            }
+        }
+        function saveProduct() {
+            var id = $('#productId').val();
+            var product = {
+                name: $('#productName').textbox('getValue'),
+                category: $('#productCategory').textbox('getValue'),
+                price: $('#productPrice').numberbox('getValue'),
+                stock: $('#productStock').numberbox('getValue'),
+                unit: $('#productUnit').textbox('getValue'),
+                description: $('#productDescription').textbox('getValue')
+            };
+            var url = '/api/product';
+            var type = 'POST';
+            if (id) {
+                url += '/' + id;
+                type = 'PUT';
+            }
+            $.ajax({
+                url: url,
+                type: type,
+                contentType: 'application/json',
+                data: JSON.stringify(product),
+                success: function (result) {
+                    $('#productDialog').dialog('close');
+                    $('#dg').datagrid('reload');
+                    $.messager.show({ title: '成功', msg: '操作成功' });
+                },
+                error: function (xhr) {
+                    $.messager.alert('错误', xhr.responseText, 'error');
+                }
+            });
+        }
+        function deleteProduct() {
+            var row = $('#dg').datagrid('getSelected');
+            if (row) {
+                $.messager.confirm('确认', '确定要删除该商品吗？', function (r) {
+                    if (r) {
+                        $.ajax({
+                            url: '/api/product/' + row.id,
+                            type: 'DELETE',
+                            success: function () {
+                                $('#dg').datagrid('reload');
+                                $.messager.show({ title: '成功', msg: '删除成功' });
+                            },
+                            error: function (xhr) {
+                                $.messager.alert('错误', xhr.responseText, 'error');
+                            }
+                        });
+                    }
+                });
+            } else {
+                $.messager.alert('提示', '请先选择要删除的商品', 'info');
             }
         }
     </script>

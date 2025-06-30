@@ -27,5 +27,25 @@ public class ProductController {
         return ResponseEntity.ok(productService.searchProducts(keyword, category, pageable));
     }
     
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateProduct(@PathVariable Long id, @RequestBody Product product) {
+        try {
+            product.setId(id);
+            return ResponseEntity.ok(productService.updateProduct(product));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
+        try {
+            productService.deleteProduct(id);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
     // 其他产品相关接口...
 } 

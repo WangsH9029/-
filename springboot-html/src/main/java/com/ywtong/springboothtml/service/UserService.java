@@ -125,4 +125,11 @@ public class UserService {
     public List<User> searchUsers(String keyword) {
         return userRepository.findByUsernameContainingOrNicknameContaining(keyword, keyword);
     }
+
+    public List<User> findByRole(String role) {
+        return userRepository.findByRole(role);
+    }
+    public List<User> findAll() {
+        return userRepository.findAll();
+    }
 } 

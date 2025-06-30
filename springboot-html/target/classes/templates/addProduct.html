@@ -9,6 +9,8 @@
 <body>
 <script src="//unpkg.com/vue@2/dist/vue.js"></script>
 <script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
 <div id="app">
     <div class="content-container">
         <el-card>
@@ -19,7 +21,11 @@
                 <el-form-item label="价格"><el-input v-model="form.price" type="number"></el-input></el-form-item>
                 <el-form-item label="库存"><el-input v-model="form.stock" type="number"></el-input></el-form-item>
                 <el-form-item label="单位"><el-input v-model="form.unit"></el-input></el-form-item>
-                <el-form-item label="农户"><el-input v-model="form.farmer"></el-input></el-form-item>
+                <el-form-item label="农户">
+                    <el-select v-model="form.farmerId" placeholder="请选择农户">
+                        <el-option v-for="farmer in farmers" :key="farmer.id" :label="farmer.nickname" :value="farmer.id"></el-option>
+                    </el-select>
+                </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="onSubmit">提交</el-button>
                     <el-button @click="onCancel">取消</el-button>
@@ -31,9 +37,38 @@
 <script>
 new Vue({
     el:'#app',
-    data(){return{form:{name:'',category:'',price:'',stock:'',unit:'',farmer:''}}},
+    data(){
+        return {
+            form:{name:'',category:'',price:'',stock:'',unit:'',farmerId:''},
+            farmers:[]
+        }
+    },
+    created() {
+        axios.get('/demo/api/user/list?role=ROLE_FARMER')
+            .then(res => {
+                console.log('农户接口返回：', res.data);
+                this.farmers = res.data.content || res.data;
+            });
+    },
     methods:{
-        onSubmit(){this.$message.success('提交成功！');},
+        onSubmit(){
+            let product = {
+                name: this.form.name,
+                category: this.form.category,
+                price: this.form.price,
+                stock: this.form.stock,
+                unit: this.form.unit,
+                farmer: { id: this.form.farmerId }
+            };
+            axios.post('/demo/api/product', product)
+                .then(() => {
+                    this.$message.success('提交成功！');
+                    setTimeout(()=>window.location.href='toProductList', 1000);
+                })
+                .catch(() => {
+                    this.$message.error('提交失败！');
+                });
+        },
         onCancel(){window.location.href='toProductList';}
     }
 })

@@ -23,7 +23,11 @@ public class ProductService {
         if (category != null && !category.isEmpty()) {
             return productRepository.findByCategory(category, pageable);
         }
-        return productRepository.findByNameContaining(keyword, pageable);
+        if (keyword != null && !keyword.isEmpty()) {
+            return productRepository.findByNameContaining(keyword, pageable);
+        }
+        // 关键：无条件时查全部，用于与初始显示
+        return productRepository.findAll(pageable);
     }
     
     public Page<Product> getAllProducts(Pageable pageable) {

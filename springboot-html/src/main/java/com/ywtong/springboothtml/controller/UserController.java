@@ -33,9 +33,12 @@ public class UserController {
     }
     
     @GetMapping("/list")
-    public ResponseEntity<Page<User>> listUsers(Pageable pageable) {
-        return ResponseEntity.ok(userService.getAllUsers(pageable));
+public ResponseEntity<?> listUsers(@RequestParam(required = false) String role) {
+    if (role != null && !role.isEmpty()) {
+        return ResponseEntity.ok(userService.findByRole(role));
     }
+    return ResponseEntity.ok(userService.findAll());
+}
     
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User user) {

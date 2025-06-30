@@ -5,7 +5,7 @@ public class Resp<E> {
     private String massage;
     private E body;
 
-    Resp(String code, String massage, E body) {
+    public Resp(String code, String massage, E body) {
         this.code = code;
         this.massage = massage;
         this.body = body;
@@ -35,11 +35,11 @@ public class Resp<E> {
         this.code = code;
     }
 
-    public static <E> Resp<E> success(E body) {
-        return new Resp("200", "success", body);
+    public static <T> Resp<T> success(T body) {
+        return new Resp<>("200", "success", body);
     }
 
-    public static <E> Resp<E> fail(String code, String massage) {
-        return new Resp(code, massage, (Object) null);
+    public static <T> Resp<T> fail(String code, String massage) {
+        return new Resp<>(code, massage, null);
     }
 }

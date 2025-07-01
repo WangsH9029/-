@@ -91,8 +91,10 @@
                                     message: response.msg,
                                     type: response.flag ? 'success' : 'error'
                                 });
-                                if (response.flag) {
+                                if (response.body === '管理员身份登入！') {
                                     window.location.href = 'toMain';
+                                } else if (response.body === '农户身份登入！') {
+                                    window.location.href = 'toMainForFarmer';
                                 } else {
                                     window.location.href = 'toMainForUser';
                                 }

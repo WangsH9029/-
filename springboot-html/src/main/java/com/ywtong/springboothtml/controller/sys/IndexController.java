@@ -24,6 +24,8 @@ public class IndexController {
     public Resp<String> login(String account, int password) {
         if ("admin".equals(account) && password == 65535) {
             return Resp.success("管理员身份登入！");
+        }else if("farmer".equals(account) && password == 65535){
+            return Resp.success("农户身份登入！");
         } else {
             return Resp.fail("400", "游客身份登入！");
         }
@@ -44,7 +46,13 @@ public class IndexController {
     @RequestMapping("/toMainForUser")
     public String toMainForUser(Model model) {
         model.addAttribute("name", "ywtong");
-        return "main";
+        return "mainForUser";
+    }
+
+    @RequestMapping("/toMainForFarmer")
+    public String toMainForFarmer(Model model) {
+        model.addAttribute("name", "ywtong");
+        return "mainForFarmer";
     }
 
     @RequestMapping("/toProductList")

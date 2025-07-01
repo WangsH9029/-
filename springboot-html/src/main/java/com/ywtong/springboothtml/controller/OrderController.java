@@ -26,5 +26,15 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getUserOrders(userId, pageable));
     }
     
+    @GetMapping("/list")
+    public ResponseEntity<?> getAllOrders(Pageable pageable) {
+        return ResponseEntity.ok(orderService.getAllOrders(pageable));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteOrder(@PathVariable Long id) {
+        orderService.deleteOrder(id);
+        return ResponseEntity.ok().build();
+    }
     // 其他订单相关接口...
 } 

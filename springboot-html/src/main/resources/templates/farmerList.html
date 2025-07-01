@@ -171,187 +171,146 @@
 </div>
 
 <script>
-new Vue({
-    el: '#app',
-    data() {
-        return {
-            loading: false,
-            farmers: [
-                {
-                    name: '张三农场',
-                    contact: '张三',
-                    phone: '13800138000',
-                    address: '浙江省杭州市西湖区',
-                    area: 100.5,
-                    crops: ['水稻', '小麦'],
-                    status: '1',
-                    createTime: '2024-01-01 12:00:00',
-                    certificateUrl: 'https://example.com/certificate.jpg'
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                loading: false,
+                farmers: [],
+                searchForm: {
+                    name: '',
+                    status: ''
                 },
-                {
-                    name: '李四农场',
-                    contact: '李四',
-                    phone: '13800138001',
-                    address: '浙江省杭州市萧山区',
-                    area: 80.0,
-                    crops: ['玉米', '大豆'],
-                    status: '2',
-                    createTime: '2024-01-02 12:00:00',
-                    certificateUrl: 'https://example.com/certificate2.jpg'
+                currentPage: 1,
+                pageSize: 10,
+                total: 0,
+                dialogVisible: false,
+                dialogTitle: '添加农户',
+                isEdit: false,
+                farmerForm: {
+                    id: '',
+                    username: '',
+                    nickname: '',
+                    contact: '',
+                    phone: '',
+                    address: '',
+                    area: 0,
+                    crops: [],
+                    certificates: [],
+                    isVerified: false
+                },
+                rules: {
+                    username: [{ required: true, message: '请输入登录账号', trigger: 'blur' }],
+                    nickname: [{ required: true, message: '请输入农户名称', trigger: 'blur' }],
+                    phone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }]
+                },
+                currentFarmer: {},
+                viewDialogVisible: false,
+                verifyDialogVisible: false,
+                verifyForm: {
+                    result: '1',
+                    comment: ''
                 }
-            ],
-            searchForm: {
-                name: '',
-                status: ''
+            }
+        },
+        created() {
+            this.fetchFarmers();
+        },
+        methods: {
+            fetchFarmers() {
+                this.loading = true;
+                axios.get('/api/user/list?role=ROLE_FARMER')
+                    .then(res => {
+                        this.farmers = res.data;
+                        this.total = res.data.length;
+                    })
+                    .finally(() => {
+                        this.loading = false;
+                    });
             },
-            currentPage: 1,
-            pageSize: 10,
-            total: 100,
-            dialogVisible: false,
-            dialogTitle: '添加农户',
-            isEdit: false,
-            farmerForm: {
-                name: '',
-                contact: '',
-                phone: '',
-                address: '',
-                area: 0,
-                crops: [],
-                certificates: []
+            handleSearch() {
+                this.fetchFarmers();
             },
-            rules: {
-                name: [
-                    { required: true, message: '请输入农户名称', trigger: 'blur' }
-                ],
-                contact: [
-                    { required: true, message: '请输入联系人', trigger: 'blur' }
-                ],
-                phone: [
-                    { required: true, message: '请输入联系电话', trigger: 'blur' },
-                    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
-                ],
-                address: [
-                    { required: true, message: '请输入地址', trigger: 'blur' }
-                ],
-                area: [
-                    { required: true, message: '请输入种植面积', trigger: 'blur' }
-                ],
-                crops: [
-                    { required: true, message: '请选择主要作物', trigger: 'change' }
-                ]
+            resetSearch() {
+                this.searchForm = { name: '', status: '' };
+                this.fetchFarmers();
             },
-            viewDialogVisible: false,
-            currentFarmer: {},
-            verifyDialogVisible: false,
-            verifyForm: {
-                result: '1',
-                comment: ''
+            handleSizeChange(val) {
+                this.pageSize = val;
             },
-            verifyRules: {
-                result: [
-                    { required: true, message: '请选择认证结果', trigger: 'change' }
-                ],
-                comment: [
-                    { required: true, message: '请输入认证意见', trigger: 'blur' }
-                ]
+            handleCurrentChange(val) {
+                this.currentPage = val;
+            },
+            handleAdd() {
+                this.dialogTitle = '添加农户';
+                this.isEdit = false;
+                this.farmerForm = {
+                    id: '',
+                    username: '',
+                    nickname: '',
+                    contact: '',
+                    phone: '',
+                    address: '',
+                    area: 0,
+                    crops: [],
+                    certificates: [],
+                    isVerified: false
+                };
+                this.dialogVisible = true;
+            },
+            handleEdit(row) {
+                this.dialogTitle = '编辑农户';
+                this.isEdit = true;
+                this.farmerForm = { ...row };
+                this.dialogVisible = true;
+            },
+            submitForm() {
+                this.$refs.farmerForm.validate(valid => {
+                    if (!valid) return;
+                    if (this.isEdit) {
+                        axios.put('/api/user/' + this.farmerForm.id, {
+                            ...this.farmerForm,
+                            role: 'ROLE_FARMER'
+                        }).then(() => {
+                            this.$message.success('编辑成功');
+                            this.dialogVisible = false;
+                            this.fetchFarmers();
+                        });
+                    } else {
+                        axios.post('/api/user/register', {
+                            ...this.farmerForm,
+                            role: 'ROLE_FARMER',
+                            password: '123456'
+                        }).then(() => {
+                            this.$message.success('添加成功');
+                            this.dialogVisible = false;
+                            this.fetchFarmers();
+                        });
+                    }
+                });
+            },
+            handleDelete(row) {
+                this.$confirm('确定要删除该农户吗？', '提示', { type: 'warning' })
+                    .then(() => {
+                        axios.delete('/api/user/' + row.id)
+                            .then(() => {
+                                this.$message.success('删除成功');
+                                this.fetchFarmers();
+                            });
+                    });
+            },
+            handleView(row) {
+                this.currentFarmer = { ...row };
+                this.viewDialogVisible = true;
+            },
+            getStatusType(status) {
+                return status ? 'success' : 'info';
+            },
+            getStatusName(status) {
+                return status ? '已认证' : '未认证';
             }
         }
-    },
-    methods: {
-        getStatusType(status) {
-            const types = {
-                '0': 'info',
-                '1': 'success',
-                '2': 'warning'
-            };
-            return types[status] || 'info';
-        },
-        getStatusName(status) {
-            const names = {
-                '0': '未认证',
-                '1': '已认证',
-                '2': '认证中'
-            };
-            return names[status] || status;
-        },
-        handleSearch() {
-            // 实现搜索逻辑
-            console.log('搜索条件：', this.searchForm);
-        },
-        resetSearch() {
-            this.searchForm = {
-                name: '',
-                status: ''
-            };
-        },
-        handleSizeChange(val) {
-            this.pageSize = val;
-            // 重新加载数据
-        },
-        handleCurrentChange(val) {
-            this.currentPage = val;
-            // 重新加载数据
-        },
-        handleAdd() {
-            this.dialogTitle = '添加农户';
-            this.isEdit = false;
-            this.farmerForm = {
-                name: '',
-                contact: '',
-                phone: '',
-                address: '',
-                area: 0,
-                crops: [],
-                certificates: []
-            };
-            this.dialogVisible = true;
-        },
-        handleEdit(row) {
-            this.dialogTitle = '编辑农户';
-            this.isEdit = true;
-            this.farmerForm = { ...row };
-            this.dialogVisible = true;
-        },
-        handleView(row) {
-            this.currentFarmer = { ...row };
-            this.viewDialogVisible = true;
-        },
-        handleVerify(row) {
-            this.currentFarmer = row;
-            this.verifyForm = {
-                result: '1',
-                comment: ''
-            };
-            this.verifyDialogVisible = true;
-        },
-        handleDelete(row) {
-            this.$confirm('确认删除该农户吗？', '提示', {
-                type: 'warning'
-            }).then(() => {
-                // 实现删除逻辑
-                this.$message.success('删除成功');
-            }).catch(() => {});
-        },
-        submitForm() {
-            this.$refs.farmerForm.validate((valid) => {
-                if (valid) {
-                    // 实现提交逻辑
-                    this.$message.success(this.isEdit ? '修改成功' : '添加成功');
-                    this.dialogVisible = false;
-                }
-            });
-        },
-        submitVerify() {
-            this.$refs.verifyForm.validate((valid) => {
-                if (valid) {
-                    // 实现认证逻辑
-                    this.$message.success('认证操作成功');
-                    this.verifyDialogVisible = false;
-                }
-            });
-        }
-    }
-})
-</script>
+    });
+    </script>
 </body>
 </html> 

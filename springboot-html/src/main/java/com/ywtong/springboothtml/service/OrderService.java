@@ -55,5 +55,10 @@ public class OrderService {
         return orderRepository.findAll(pageable);
     }
     
+    @Transactional
+    public void deleteOrder(Long id) {
+        orderRepository.deleteById(id);
+    }
+
     // 其他订单相关方法...
 } 

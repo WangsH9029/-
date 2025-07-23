@@ -1,4 +1,4 @@
-学年论文用simple农业管理系统
+学年论文农业管理系统
 要提前打开本地数据库，
 使用Mysql账户名sa/root密码123456
 进入网址http://localhost:8080/demo

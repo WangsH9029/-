@@ -1,0 +1,12 @@
+package com.ywtong.springboothtml.repository;
+
+import com.ywtong.springboothtml.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+    User findByUsername(String username);
+    boolean existsByUsername(String username);
+    List<User> findByUsernameContainingOrNicknameContaining(String username, String nickname);
+    List<User> findByRole(String role);
+} 

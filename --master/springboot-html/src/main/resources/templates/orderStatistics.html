@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>订单统计</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>body{margin:0;padding:0;}.content-container{margin:20px;padding:20px;}</style>
+</head>
+<body>
+<script src="//unpkg.com/vue@2/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<div id="app">
+    <div class="content-container">
+        <el-card>
+            <div slot="header"><span>订单统计</span></div>
+            <el-row :gutter="20">
+                <el-col :span="6"><el-card><div>今日订单数：128</div></el-card></el-col>
+                <el-col :span="6"><el-card><div>本月订单数：1024</div></el-card></el-col>
+                <el-col :span="6"><el-card><div>总销售额：¥125,800</div></el-card></el-col>
+                <el-col :span="6"><el-card><div>待发货订单：12</div></el-card></el-col>
+            </el-row>
+            <div style="margin-top:30px;text-align:center;">
+                <el-card><div>（此处可放置订单统计图表）</div></el-card>
+            </div>
+        </el-card>
+    </div>
+</div>
+<script>
+new Vue({el:'#app'})
+</script>
+</body>
+</html> 

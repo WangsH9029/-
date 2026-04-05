@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>订单列表</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>
+        body { margin: 0; padding: 0; }
+        .content-container { margin: 20px; padding: 20px; }
+    </style>
+</head>
+<body>
+<script src="//unpkg.com/vue@2/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<div id="app">
+    <div class="content-container">
+        <el-card>
+            <div slot="header">
+                <span>订单列表</span>
+                <el-button type="primary" size="small" style="float:right" @click="handleAdd">添加订单</el-button>
+            </div>
+            <el-table :data="orders" style="width:100%" v-loading="loading">
+                <el-table-column prop="orderNo" label="订单编号" width="180"></el-table-column>
+                <el-table-column label="客户名称" width="120">
+                    <template slot-scope="scope">
+                        {{ scope.row.user && (scope.row.user.nickname || scope.row.user.username) }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="totalAmount" label="订单金额" width="120"></el-table-column>
+                <el-table-column label="订单状态" width="120">
+                    <template slot-scope="scope">
+                        <el-tag :type="getStatusTag(scope.row.status)">
+                            {{ getStatusName(scope.row.status) }}
+                        </el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="createTime" label="创建时间"></el-table-column>
+                <el-table-column label="操作" width="150">
+                    <template slot-scope="scope">
+                        <el-button type="text" size="small" @click="handleDelete(scope.row)" style="color:red">删除</el-button>
+                        <el-button type="text" size="small">详情</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-card>
+        <!-- 添加订单弹窗 -->
+        <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="500px">
+            <el-form :model="orderForm" :rules="rules" ref="orderForm" label-width="100px">
+                <el-form-item label="用户ID" prop="userId">
+                    <el-input v-model="orderForm.userId"></el-input>
+                </el-form-item>
+                <el-form-item label="订单编号" prop="orderNo">
+                    <el-input v-model="orderForm.orderNo"></el-input>
+                </el-form-item>
+                <el-form-item label="订单金额" prop="totalAmount">
+                    <el-input v-model="orderForm.totalAmount"></el-input>
+                </el-form-item>
+                <el-form-item label="收货人" prop="receiverName">
+                    <el-input v-model="orderForm.receiverName"></el-input>
+                </el-form-item>
+                <el-form-item label="联系电话" prop="phone">
+                    <el-input v-model="orderForm.phone"></el-input>
+                </el-form-item>
+                <el-form-item label="地址" prop="address">
+                    <el-input v-model="orderForm.address"></el-input>
+                </el-form-item>
+                <el-form-item label="支付方式" prop="paymentMethod">
+                    <el-input v-model="orderForm.paymentMethod"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="dialogVisible = false">取 消</el-button>
+                <el-button type="primary" @click="submitForm">确 定</el-button>
+            </div>
+        </el-dialog>
+    </div>
+</div>
+<script>
+new Vue({
+    el: '#app',
+    data() {
+        return {
+            orders: [],
+            loading: false,
+            dialogVisible: false,
+            dialogTitle: '添加订单',
+            isEdit: false,
+            orderForm: {
+                userId: '',
+                orderNo: '',
+                totalAmount: '',
+                status: '',
+                address: '',
+                phone: '',
+                receiverName: '',
+                paymentMethod: ''
+            },
+            rules: {
+                userId: [{ required: true, message: '请输入用户ID', trigger: 'blur' }],
+                orderNo: [{ required: true, message: '请输入订单编号', trigger: 'blur' }],
+                totalAmount: [{ required: true, message: '请输入订单金额', trigger: 'blur' }],
+                receiverName: [{ required: true, message: '请输入收货人', trigger: 'blur' }],
+                address: [{ required: true, message: '请输入地址', trigger: 'blur' }],
+                phone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }]
+            }
+        }
+    },
+    created() {
+        this.fetchOrders();
+    },
+    methods: {
+        fetchOrders() {
+            this.loading = true;
+            axios.get('/demo/api/order/list')
+                .then(res => {
+                    // 兼容分页和非分页
+                    this.orders = res.data.content || res.data;
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
+        handleAdd() {
+            this.dialogTitle = '添加订单';
+            this.isEdit = false;
+            this.orderForm = {
+                userId: '',
+                orderNo: '',
+                totalAmount: '',
+                status: '',
+                address: '',
+                phone: '',
+                receiverName: '',
+                paymentMethod: ''
+            };
+            this.dialogVisible = true;
+        },
+        submitForm() {
+            this.$refs.orderForm.validate(valid => {
+                if (!valid) return;
+                // 构造后端需要的订单对象
+                const orderData = {
+                    orderNo: this.orderForm.orderNo,
+                    totalAmount: this.orderForm.totalAmount,
+                    status: this.orderForm.status || 'PENDING_PAYMENT',
+                    address: this.orderForm.address,
+                    phone: this.orderForm.phone,
+                    receiverName: this.orderForm.receiverName,
+                    paymentMethod: this.orderForm.paymentMethod,
+                    user: { id: this.orderForm.userId }
+                };
+                axios.post('/demo/api/order', orderData)
+                    .then(() => {
+                        this.$message.success('添加成功');
+                        this.dialogVisible = false;
+                        this.fetchOrders();
+                    });
+            });
+        },
+        handleDelete(row) {
+            this.$confirm('确定要删除该订单吗？', '提示', { type: 'warning' })
+                .then(() => {
+                    axios.delete('/demo/api/order/' + row.id)
+                        .then(() => {
+                            this.$message.success('删除成功');
+                            this.fetchOrders();
+                        });
+                });
+        },
+        getStatusTag(status) {
+            switch(status) {
+                case 'COMPLETED': return 'success';
+                case 'CANCELLED': return 'info';
+                case 'PAID': return 'primary';
+                case 'SHIPPED': return 'warning';
+                default: return 'danger';
+            }
+        },
+        getStatusName(status) {
+            switch(status) {
+                case 'COMPLETED': return '已完成';
+                case 'CANCELLED': return '已取消';
+                case 'PAID': return '已支付';
+                case 'SHIPPED': return '已发货';
+                case 'PENDING_PAYMENT': return '待支付';
+                default: return status;
+            }
+        }
+    }
+});
+</script>
+</body>
+</html>

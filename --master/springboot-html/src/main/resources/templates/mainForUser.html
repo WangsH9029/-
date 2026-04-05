@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>农产品交易平台</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>
+        body { margin: 0; padding: 0; }
+        .el-header { background-color: #409EFF; color: white; line-height: 60px; }
+        .el-aside { background-color: #545c64; color: white; }
+        .el-menu { border-right: none; }
+        .content-container { padding: 20px; }
+    </style>
+</head>
+<body>
+<script src="//unpkg.com/vue@2/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<div id="app">
+    <el-container style="height: 50vh;">
+        <el-header>
+            <span style="font-size: 20px;">农产品交易平台</span>
+            <span style="float: right;">欢迎，{{username}}</span>
+        </el-header>
+        <el-container>
+            <el-aside width="200px">
+                <el-menu
+                    default-active="1"
+                    class="el-menu-vertical"
+                    background-color="#545c64"
+                    text-color="#fff"
+                    active-text-color="#ffd04b"
+                    @select="handleSelect">
+                    <el-menu-item index="1">
+                        <i class="el-icon-s-goods"></i>
+                        <span slot="title">商品管理</span>
+                    </el-menu-item>
+                    <el-menu-item index="2" disabled style="color:#bbb;cursor:not-allowed;">
+                        <i class="el-icon-s-order"></i>
+                        <span slot="title">订单管理（无权限）</span>
+                    </el-menu-item>
+                    <el-menu-item index="3" disabled style="color:#bbb;cursor:not-allowed;">
+                        <i class="el-icon-user"></i>
+                        <span slot="title">用户管理（无权限）</span>
+                    </el-menu-item>
+                    <el-menu-item index="4" disabled style="color:#bbb;cursor:not-allowed;">
+                        <i class="el-icon-s-custom"></i>
+                        <span slot="title">农户管理（无权限）</span>
+                    </el-menu-item>
+                    <el-menu-item index="5">
+                        <i class="el-icon-s-data"></i>
+                        <span slot="title">数据统计</span>
+                    </el-menu-item>
+                    <el-menu-item index="6">
+                        <i class="el-icon-setting"></i>
+                        <span slot="title">系统设置</span>
+                    </el-menu-item>
+                </el-menu>
+            </el-aside>
+            <el-main>
+                <div class="content-container">
+                    <router-view></router-view>
+                    <div style="margin-top: 40px;">
+                        <h2>农户入驻</h2>
+                        <ul>
+                            <li>加入我们！</li>
+                            <li>添加管理员邮箱以获取资格认证</li>
+                            <li>认证通过后，即可在平台发布商品</li>
+                        </ul>
+                        <h2>农产品小知识</h2>
+                        <ul>
+                            <li>有机农产品是指在生产过程中不使用化学合成的农药、化肥、激素等物质，遵循自然规律和生态学原理生产的农产品。</li>
+                            <li>绿色食品是指产自优良生态环境、按照绿色食品标准生产、经专门机构认证的无污染、安全、优质的食品。</li>
+                            <li>农产品溯源可以帮助消费者了解产品的生产、加工、流通等全过程信息，保障食品安全。</li>
+                        </ul>
+                        <h3>推荐阅读</h3>
+                        <ul>
+                            <li><a href="https://baike.baidu.com/item/%E6%9C%89%E6%9C%BA%E9%A3%9F%E7%89%A9/2475138?fr=aladdin" target="_blank">什么是有机农产品？（百度百科）</a></li>
+                            <li><a href="https://www.moa.gov.cn/" target="_blank">中国农业农村部官网</a></li>
+                            <li><a href="https://www.foodmate.net/" target="_blank">食品伙伴网</a></li>
+                        </ul>
+                        <div style="margin-top:30px; color:#888; font-size:14px;">
+                            <p>本平台致力于为农户和消费者搭建安全、便捷、高效的农产品交易桥梁。</p>
+                            <p>如有建议或合作意向，请联系 <a href="mailto:3304739649@qq.com">3304739649@qq.com</a></p>
+                        </div>
+                    </div>
+                </div>
+            </el-main>
+        </el-container>
+    </el-container>
+</div>
+<script>
+new Vue({
+    el: '#app',
+    data() {
+        return {
+            username: '用户'
+        }
+    },
+    methods: {
+        handleSelect(key) {
+            switch(key) {
+                case '1':
+                    window.location.href = '/demo/toProductList';
+                    break;
+                case '2':
+                    window.location.href = '/demo/toOrderList';
+                    break;
+                case '3':
+                    window.location.href = '/demo/toUserList';
+                    break;
+                case '4':
+                    window.location.href = '/demo/toFarmerList';
+                    break;
+                case '5':
+                    window.location.href = '/demo/toStatistics';
+                    break;
+                case '6':
+                    window.location.href = '/demo/toSettings';
+                    break;
+            }
+        }
+    }
+})
+</script>
+</body>
+</html> 

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>商品列表</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>body{margin:0;padding:0;}.content-container{margin:20px;padding:20px;}</style>
+</head>
+<body>
+<script src="//unpkg.com/vue@2/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<div id="app">
+    <div class="content-container">
+        <el-card>
+            <div slot="header">
+                <span>商品列表</span>
+                <el-button type="primary" size="small" style="float:right" @click="goAdd">添加商品</el-button>
+            </div>
+            <el-table :data="products" style="width:100%">
+                <el-table-column prop="name" label="商品名称" width="180"></el-table-column>
+                <el-table-column prop="category" label="分类" width="120"></el-table-column>
+                <el-table-column prop="price" label="价格" width="120"></el-table-column>
+                <el-table-column prop="stock" label="库存" width="120"></el-table-column>
+                <el-table-column prop="unit" label="单位" width="80"></el-table-column>
+                <el-table-column :formatter="farmerName" label="农户" width="120"></el-table-column>
+                <el-table-column label="操作" width="150">
+                    <template slot-scope="scope">
+                        <el-button type="text" size="small" @click="openEditDialog(scope.row)">编辑</el-button>
+                        <el-button type="text" size="small" style="color:red" @click="deleteProduct(scope.row)">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-card>
+        <!-- 编辑商品弹窗 -->
+        <el-dialog title="编辑商品" :visible.sync="editDialogVisible">
+            <el-form :model="editForm" label-width="100px">
+                <el-form-item label="商品名称"><el-input v-model="editForm.name"></el-input></el-form-item>
+                <el-form-item label="分类"><el-input v-model="editForm.category"></el-input></el-form-item>
+                <el-form-item label="价格"><el-input v-model="editForm.price" type="number"></el-input></el-form-item>
+                <el-form-item label="库存"><el-input v-model="editForm.stock" type="number"></el-input></el-form-item>
+                <el-form-item label="单位"><el-input v-model="editForm.unit"></el-input></el-form-item>
+                <el-form-item label="农户">
+                    <el-select v-model="editForm.farmerId" placeholder="请选择农户">
+                        <el-option v-for="farmer in farmers" :key="farmer.id" :label="farmer.nickname" :value="farmer.id"></el-option>
+                    </el-select>
+                </el-form-item>
+            </el-form>
+            <div slot="footer">
+                <el-button @click="editDialogVisible=false">取消</el-button>
+                <el-button type="primary" @click="saveEdit">保存</el-button>
+            </div>
+        </el-dialog>
+    </div>
+</div>
+<script>
+new Vue({
+    el:'#app',
+    data(){
+        return {
+            products:[],
+            farmers:[],
+            editDialogVisible: false,
+            editForm: {id:'', name:'', category:'', price:'', stock:'', unit:'', farmerId:''}
+        }
+    },
+    created() {
+        this.fetchProducts();
+        this.fetchFarmers();
+    },
+    methods:{
+        goAdd(){window.location.href='toAddProduct';},
+        farmerName(row) {
+            return row.farmer && row.farmer.nickname ? row.farmer.nickname : '';
+        },
+        openEditDialog(row) {
+            this.editForm = {
+                id: row.id,
+                name: row.name,
+                category: row.category,
+                price: row.price,
+                stock: row.stock,
+                unit: row.unit,
+                farmerId: row.farmer && row.farmer.id ? row.farmer.id : ''
+            };
+            this.editDialogVisible = true;
+        },
+        saveEdit() {
+            let product = {
+                name: this.editForm.name,
+                category: this.editForm.category,
+                price: this.editForm.price,
+                stock: this.editForm.stock,
+                unit: this.editForm.unit,
+                farmer: { id: this.editForm.farmerId }
+            };
+            axios.put('/demo/api/product/' + this.editForm.id, product)
+                .then(() => {
+                    this.$message.success('保存成功');
+                    this.editDialogVisible = false;
+                    this.fetchProducts();
+                })
+                .catch(() => {
+                    this.$message.error('保存失败');
+                });
+        },
+        deleteProduct(row) {
+            this.$confirm('确定要删除该商品吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                axios.delete('/demo/api/product/' + row.id)
+                    .then(() => {
+                        this.$message.success('删除成功');
+                        this.fetchProducts();
+                    })
+                    .catch(() => {
+                        this.$message.error('删除失败');
+                    });
+            });
+        },
+        fetchProducts() {
+            axios.get('/demo/api/product/search')
+                .then(res => {
+                    this.products = res.data.content || res.data;
+                })
+                .catch(err => {
+                    this.$message.error('获取商品数据失败');
+                });
+        },
+        fetchFarmers() {
+            axios.get('/demo/api/user/list?role=ROLE_FARMER')
+                .then(res => {
+                    this.farmers = res.data.content || res.data;
+                });
+        }
+    }
+})
+</script>
+</body>
+</html> 

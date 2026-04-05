@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>AAA智慧农业 登录</title>
+    <!-- Element UI CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- Vue.js -->
+    <script src="https://unpkg.com/vue@2/dist/vue.min.js"></script>
+    <!-- Element UI JS -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+        .login-title {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #303133;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="login-container">
+        <h2 class="login-title">用户登录</h2>
+        <el-form :model="form" :rules="rules" ref="form" label-position="top">
+            <el-form-item label="账号" prop="account">
+                <el-input v-model="form.account" placeholder="请输入账号" clearable></el-input>
+            </el-form-item>
+            <el-form-item label="密码" prop="password">
+                <el-input v-model="form.password" type="password" placeholder="请输入密码" show-password></el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="submitForm('form')" style="width: 100%;">提交</el-button>
+            </el-form-item>
+        </el-form>
+    </div>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                form: {
+                    account: '',
+                    password: ''
+                },
+                rules: {
+                    account: [
+                        { required: true, message: '请输入账号', trigger: 'blur' }
+                    ],
+                    password: [
+                        { required: true, message: '请输入密码', trigger: 'blur' }
+                    ]
+                }
+            };
+        },
+        methods: {
+            submitForm(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        $.ajax({
+                            url: '/demo/login',
+                            data: {
+                                account: this.form.account,
+                                password: this.form.password
+                            },
+                            success: (response) => {
+                                this.$message({
+                                    message: response.msg,
+                                    type: response.flag ? 'success' : 'error'
+                                });
+                                if (response.body === '管理员身份登入！') {
+                                    window.location.href = 'toMain';
+                                } else if (response.body === '农户身份登入！') {
+                                    window.location.href = 'toMainForFarmer';
+                                } else {
+                                    window.location.href = 'toMainForUser';
+                                }
+                            },
+                            error: () => {
+                                this.$message.error('登录失败，请检查网络或服务器');
+                            }
+                        });
+                    } else {
+                        return false;
+                    }
+                });
+            }
+        }
+    });
+</script>
+</body>
+</html>

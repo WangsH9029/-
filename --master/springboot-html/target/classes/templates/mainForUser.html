@@ -10,6 +10,7 @@
         .el-aside { background-color: #545c64; color: white; }
         .el-menu { border-right: none; }
         .content-container { padding: 20px; }
+        .content-iframe { width: 100%; height: calc(100vh - 60px); border: none; }
     </style>
 </head>
 <body>
@@ -17,10 +18,13 @@
 <script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <div id="app">
-    <el-container style="height: 50vh;">
+    <el-container style="height: 100vh;">
         <el-header>
             <span style="font-size: 20px;">农产品交易平台</span>
-            <span style="float: right;">欢迎，{{username}}</span>
+            <span style="float: right;">
+                <el-button type="text" style="color: white;" @click="logout">退出登录</el-button>
+                <span style="margin-left: 10px;">欢迎，{{username}}</span>
+            </span>
         </el-header>
         <el-container>
             <el-aside width="200px">
@@ -57,9 +61,9 @@
                     </el-menu-item>
                 </el-menu>
             </el-aside>
-            <el-main>
-                <div class="content-container">
-                    <router-view></router-view>
+            <el-main style="padding: 0;">
+                <iframe v-if="currentPage" :src="currentPage" class="content-iframe"></iframe>
+                <div v-else class="content-container">
                     <div style="margin-top: 40px;">
                         <h2>农户入驻</h2>
                         <ul>
@@ -94,7 +98,8 @@ new Vue({
     el: '#app',
     data() {
         return {
-            username: ''
+            username: '',
+            currentPage: ''
         }
     },
     created() {
@@ -114,24 +119,33 @@ new Vue({
         handleSelect(key) {
             switch(key) {
                 case '1':
-                    window.location.href = '/demo/toMall';
+                    this.currentPage = '/demo/toMall';
                     break;
                 case '2':
-                    window.location.href = '/demo/toOrderList';
+                    this.currentPage = '/demo/toOrderList';
                     break;
                 case '3':
-                    window.location.href = '/demo/toUserList';
+                    this.currentPage = '/demo/toUserList';
                     break;
                 case '4':
-                    window.location.href = '/demo/toFarmerList';
+                    this.currentPage = '/demo/toFarmerList';
                     break;
                 case '5':
-                    window.location.href = '/demo/toStatistics';
+                    this.currentPage = '/demo/toStatistics';
                     break;
                 case '6':
-                    window.location.href = '/demo/toSettings';
+                    this.currentPage = '/demo/toSettings';
                     break;
             }
+        },
+        logout() {
+            axios.post('/demo/api/user/logout')
+                .then(() => {
+                    window.location.href = '/demo/';
+                })
+                .catch(() => {
+                    window.location.href = '/demo/';
+                });
         }
     }
 })

@@ -14,8 +14,8 @@
     <div class="content-container">
         <el-card>
             <div slot="header">
-                <span>商品列表</span>
-                <el-button type="primary" size="small" style="float:right" @click="goAdd">添加商品</el-button>
+                <span>{{ pageTitle }}</span>
+                <el-button v-if="canManageProducts" type="primary" size="small" style="float:right" @click="goAdd">添加商品</el-button>
             </div>
             <el-table :data="products" style="width:100%">
                 <el-table-column prop="name" label="商品名称" width="180"></el-table-column>
@@ -23,8 +23,8 @@
                 <el-table-column prop="price" label="价格" width="120"></el-table-column>
                 <el-table-column prop="stock" label="库存" width="120"></el-table-column>
                 <el-table-column prop="unit" label="单位" width="80"></el-table-column>
-                <el-table-column :formatter="farmerName" label="农户" width="120"></el-table-column>
-                <el-table-column label="操作" width="150">
+                <el-table-column v-if="isAdmin" :formatter="farmerName" label="农户" width="120"></el-table-column>
+                <el-table-column v-if="canManageProducts" label="操作" width="150">
                     <template slot-scope="scope">
                         <el-button type="text" size="small" @click="openEditDialog(scope.row)">编辑</el-button>
                         <el-button type="text" size="small" style="color:red" @click="deleteProduct(scope.row)">删除</el-button>
@@ -40,7 +40,7 @@
                 <el-form-item label="价格"><el-input v-model="editForm.price" type="number"></el-input></el-form-item>
                 <el-form-item label="库存"><el-input v-model="editForm.stock" type="number"></el-input></el-form-item>
                 <el-form-item label="单位"><el-input v-model="editForm.unit"></el-input></el-form-item>
-                <el-form-item label="农户">
+                <el-form-item label="农户" v-if="isAdmin">
                     <el-select v-model="editForm.farmerId" placeholder="请选择农户">
                         <el-option v-for="farmer in farmers" :key="farmer.id" :label="farmer.nickname" :value="farmer.id"></el-option>
                     </el-select>
@@ -61,12 +61,29 @@ new Vue({
             products:[],
             farmers:[],
             editDialogVisible: false,
+            isAdmin: false,
+            isFarmer: false,
+            canManageProducts: false,
+            pageTitle: '商品列表',
             editForm: {id:'', name:'', category:'', price:'', stock:'', unit:'', farmerId:''}
         }
     },
     created() {
-        this.fetchProducts();
-        this.fetchFarmers();
+        axios.get('/demo/api/user/current')
+            .then(res => {
+                const user = res.data.body || {};
+                this.isAdmin = user.role === 'ROLE_ADMIN';
+                this.isFarmer = user.role === 'ROLE_FARMER';
+                this.canManageProducts = this.isAdmin || this.isFarmer;
+                this.pageTitle = this.isFarmer ? '我的商品' : '商品列表';
+                this.fetchProducts();
+                if (this.isAdmin) {
+                    this.fetchFarmers();
+                }
+            })
+            .catch(() => {
+                window.location.href = '/demo/';
+            });
     },
     methods:{
         goAdd(){window.location.href='toAddProduct';},
@@ -91,17 +108,20 @@ new Vue({
                 category: this.editForm.category,
                 price: this.editForm.price,
                 stock: this.editForm.stock,
-                unit: this.editForm.unit,
-                farmer: { id: this.editForm.farmerId }
+                unit: this.editForm.unit
             };
+            if (this.isAdmin && this.editForm.farmerId) {
+                product.farmer = { id: this.editForm.farmerId };
+            }
             axios.put('/demo/api/product/' + this.editForm.id, product)
                 .then(() => {
                     this.$message.success('保存成功');
                     this.editDialogVisible = false;
                     this.fetchProducts();
                 })
-                .catch(() => {
-                    this.$message.error('保存失败');
+                .catch(err => {
+                    const msg = err.response?.data?.massage || err.response?.data?.message || '保存失败';
+                    this.$message.error(msg);
                 });
         },
         deleteProduct(row) {
@@ -115,17 +135,22 @@ new Vue({
                         this.$message.success('删除成功');
                         this.fetchProducts();
                     })
-                    .catch(() => {
-                        this.$message.error('删除失败');
+                    .catch(err => {
+                        const msg = err.response?.data?.massage || err.response?.data?.message || '删除失败';
+                        this.$message.error(msg);
                     });
             });
         },
         fetchProducts() {
-            axios.get('/demo/api/product/search')
+            const url = this.isFarmer ? '/demo/api/product/my' : '/demo/api/product/search';
+            axios.get(url)
                 .then(res => {
                     this.products = res.data.content || res.data;
+                    if (this.isFarmer && this.products.length === 0) {
+                        this.$message.info('您还没有发布商品');
+                    }
                 })
-                .catch(err => {
+                .catch(() => {
                     this.$message.error('获取商品数据失败');
                 });
         },

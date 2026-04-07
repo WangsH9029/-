@@ -7,6 +7,16 @@
     <style>
         body { margin: 0; padding: 0; }
         .content-container { margin: 20px; padding: 20px; }
+        .pay-qrcode-placeholder {
+            height: 180px;
+            border: 1px dashed #dcdfe6;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #909399;
+            background: #fafafa;
+        }
     </style>
 </head>
 <body>
@@ -17,12 +27,11 @@
     <div class="content-container">
         <el-card>
             <div slot="header">
-                <span>订单列表</span>
-                <el-button type="primary" size="small" style="float:right" @click="handleAdd">添加订单</el-button>
+                <span>{{ pageTitle }}</span>
             </div>
             <el-table :data="orders" style="width:100%" v-loading="loading">
                 <el-table-column prop="orderNo" label="订单编号" width="180"></el-table-column>
-                <el-table-column label="客户名称" width="120">
+                <el-table-column v-if="isAdmin || isFarmer" label="客户名称" width="120">
                     <template slot-scope="scope">
                         {{ scope.row.user && (scope.row.user.nickname || scope.row.user.username) }}
                     </template>
@@ -36,42 +45,29 @@
                     </template>
                 </el-table-column>
                 <el-table-column prop="createTime" label="创建时间"></el-table-column>
-                <el-table-column label="操作" width="150">
+                <el-table-column label="操作" width="220">
                     <template slot-scope="scope">
-                        <el-button type="text" size="small" @click="handleDelete(scope.row)" style="color:red">删除</el-button>
+                        <el-button v-if="isAdmin" type="text" size="small" @click="handleDelete(scope.row)" style="color:red">删除</el-button>
+                        <el-button v-if="!isAdmin && !isFarmer && scope.row.status === 'PENDING_PAYMENT'" type="text" size="small" @click="openPayDialog(scope.row)">支付</el-button>
+                        <el-button v-if="!isAdmin && !isFarmer && scope.row.status === 'PENDING_PAYMENT'" type="text" size="small" @click="handleCancel(scope.row)">取消订单</el-button>
+                        <el-button v-if="isFarmer && scope.row.status === 'PAID'" type="text" size="small" @click="handleProcess(scope.row, 'SHIPPED')">发货</el-button>
+                        <el-button v-if="isFarmer && scope.row.status === 'SHIPPED'" type="text" size="small" @click="handleProcess(scope.row, 'COMPLETED')">完成</el-button>
                         <el-button type="text" size="small">详情</el-button>
                     </template>
                 </el-table-column>
             </el-table>
         </el-card>
-        <!-- 添加订单弹窗 -->
-        <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="500px">
-            <el-form :model="orderForm" :rules="rules" ref="orderForm" label-width="100px">
-                <el-form-item label="用户ID" prop="userId">
-                    <el-input v-model="orderForm.userId"></el-input>
-                </el-form-item>
-                <el-form-item label="订单编号" prop="orderNo">
-                    <el-input v-model="orderForm.orderNo"></el-input>
-                </el-form-item>
-                <el-form-item label="订单金额" prop="totalAmount">
-                    <el-input v-model="orderForm.totalAmount"></el-input>
-                </el-form-item>
-                <el-form-item label="收货人" prop="receiverName">
-                    <el-input v-model="orderForm.receiverName"></el-input>
-                </el-form-item>
-                <el-form-item label="联系电话" prop="phone">
-                    <el-input v-model="orderForm.phone"></el-input>
-                </el-form-item>
-                <el-form-item label="地址" prop="address">
-                    <el-input v-model="orderForm.address"></el-input>
-                </el-form-item>
-                <el-form-item label="支付方式" prop="paymentMethod">
-                    <el-input v-model="orderForm.paymentMethod"></el-input>
-                </el-form-item>
-            </el-form>
-            <div slot="footer" class="dialog-footer">
-                <el-button @click="dialogVisible = false">取 消</el-button>
-                <el-button type="primary" @click="submitForm">确 定</el-button>
+
+        <el-dialog title="订单支付" :visible.sync="payDialogVisible" width="480px">
+            <div style="line-height: 30px; margin-bottom: 16px;">
+                <div>订单编号：{{ payOrder.orderNo || '-' }}</div>
+                <div>订单金额：¥ {{ payOrder.totalAmount || 0 }}</div>
+                <div>支付方式：{{ payOrder.paymentMethod || '未选择' }}</div>
+            </div>
+            <div class="pay-qrcode-placeholder">二维码预留区域</div>
+            <div slot="footer">
+                <el-button @click="payDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="confirmPay">确认支付</el-button>
             </div>
         </el-dialog>
     </div>
@@ -83,80 +79,42 @@ new Vue({
         return {
             orders: [],
             loading: false,
-            dialogVisible: false,
-            dialogTitle: '添加订单',
-            isEdit: false,
-            orderForm: {
-                userId: '',
-                orderNo: '',
-                totalAmount: '',
-                status: '',
-                address: '',
-                phone: '',
-                receiverName: '',
-                paymentMethod: ''
-            },
-            rules: {
-                userId: [{ required: true, message: '请输入用户ID', trigger: 'blur' }],
-                orderNo: [{ required: true, message: '请输入订单编号', trigger: 'blur' }],
-                totalAmount: [{ required: true, message: '请输入订单金额', trigger: 'blur' }],
-                receiverName: [{ required: true, message: '请输入收货人', trigger: 'blur' }],
-                address: [{ required: true, message: '请输入地址', trigger: 'blur' }],
-                phone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }]
-            }
+            pageTitle: '订单列表',
+            isAdmin: false,
+            isFarmer: false,
+            payDialogVisible: false,
+            payOrder: {}
         }
     },
     created() {
-        this.fetchOrders();
+        axios.get('/demo/api/user/current')
+            .then(res => {
+                const user = res.data.body || {};
+                this.isAdmin = user.role === 'ROLE_ADMIN';
+                this.isFarmer = user.role === 'ROLE_FARMER';
+                this.pageTitle = this.isAdmin ? '订单列表' : (this.isFarmer ? '销售订单' : '我的订单');
+                this.fetchOrders();
+            })
+            .catch(() => {
+                window.location.href = '/demo/';
+            });
     },
     methods: {
         fetchOrders() {
             this.loading = true;
             axios.get('/demo/api/order/list')
                 .then(res => {
-                    // 兼容分页和非分页
                     this.orders = res.data.content || res.data;
+                    if (!this.isAdmin && !this.isFarmer && this.orders.length === 0) {
+                        this.$message.info('您还没有订单');
+                    }
+                    if (this.isFarmer && this.orders.length === 0) {
+                        this.$message.info('暂无与您商品相关的订单');
+                    }
                 })
                 .finally(() => {
                     this.loading = false;
                 });
-        },
-        handleAdd() {
-            this.dialogTitle = '添加订单';
-            this.isEdit = false;
-            this.orderForm = {
-                userId: '',
-                orderNo: '',
-                totalAmount: '',
-                status: '',
-                address: '',
-                phone: '',
-                receiverName: '',
-                paymentMethod: ''
-            };
-            this.dialogVisible = true;
-        },
-        submitForm() {
-            this.$refs.orderForm.validate(valid => {
-                if (!valid) return;
-                // 构造后端需要的订单对象
-                const orderData = {
-                    orderNo: this.orderForm.orderNo,
-                    totalAmount: this.orderForm.totalAmount,
-                    status: this.orderForm.status || 'PENDING_PAYMENT',
-                    address: this.orderForm.address,
-                    phone: this.orderForm.phone,
-                    receiverName: this.orderForm.receiverName,
-                    paymentMethod: this.orderForm.paymentMethod,
-                    user: { id: this.orderForm.userId }
-                };
-                axios.post('/demo/api/order', orderData)
-                    .then(() => {
-                        this.$message.success('添加成功');
-                        this.dialogVisible = false;
-                        this.fetchOrders();
-                    });
-            });
         },
         handleDelete(row) {
             this.$confirm('确定要删除该订单吗？', '提示', { type: 'warning' })
@@ -165,7 +123,56 @@ new Vue({
                         .then(() => {
                             this.$message.success('删除成功');
                             this.fetchOrders();
+                        })
+                        .catch(err => {
+                            const msg = err.response?.data?.massage || err.response?.data?.message || '删除失败';
+                            this.$message.error(msg);
                         });
+                });
+        },
+        handleCancel(row) {
+            this.$confirm('确定要取消该订单吗？', '提示', { type: 'warning' })
+                .then(() => {
+                    axios.put('/demo/api/order/' + row.id + '/cancel')
+                        .then(() => {
+                            this.$message.success('取消成功');
+                            this.fetchOrders();
+                        })
+                        .catch(err => {
+                            const msg = err.response?.data?.massage || err.response?.data?.message || '取消失败';
+                            this.$message.error(msg);
+                        });
+                });
+        },
+        openPayDialog(row) {
+            this.payOrder = row;
+            this.payDialogVisible = true;
+        },
+        confirmPay() {
+            axios.put('/demo/api/order/' + this.payOrder.id + '/pay')
+                .then(() => {
+                    this.$message.success('支付成功');
+                    this.payDialogVisible = false;
+                    this.fetchOrders();
+                })
+                .catch(err => {
+                    const msg = err.response?.data?.massage || err.response?.data?.message || '支付失败';
+                    this.$message.error(msg);
+                });
+        },
+        handleProcess(row, status) {
+            const actionText = status === 'SHIPPED' ? '发货' : '完成';
+            this.$confirm('确定要执行' + actionText + '操作吗？', '提示', { type: 'warning' })
+                .then(() => {
+                    axios.put('/demo/api/order/' + row.id + '/status', null, {
+                        params: { status }
+                    }).then(() => {
+                        this.$message.success(actionText + '成功');
+                        this.fetchOrders();
+                    }).catch(err => {
+                        const msg = err.response?.data?.massage || err.response?.data?.message || actionText + '失败';
+                        this.$message.error(msg);
+                    });
                 });
         },
         getStatusTag(status) {

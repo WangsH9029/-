@@ -17,7 +17,13 @@ public class OrderItem {
     @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;
-    
+
+    @Column(name = "product_name")
+    private String productName;
+
+    @Column(name = "total_price")
+    private BigDecimal totalPrice;
+
     private Integer quantity;
     private BigDecimal price;
     private BigDecimal subtotal;
@@ -49,6 +55,22 @@ public class OrderItem {
 
     public Integer getQuantity() {
         return quantity;
+    }
+
+    public String getProductName() {
+        return productName;
+    }
+
+    public void setProductName(String productName) {
+        this.productName = productName;
+    }
+
+    public BigDecimal getTotalPrice() {
+        return totalPrice;
+    }
+
+    public void setTotalPrice(BigDecimal totalPrice) {
+        this.totalPrice = totalPrice;
     }
 
     public void setQuantity(Integer quantity) {

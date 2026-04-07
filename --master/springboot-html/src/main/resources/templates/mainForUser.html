@@ -15,6 +15,7 @@
 <body>
 <script src="//unpkg.com/vue@2/dist/vue.js"></script>
 <script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <div id="app">
     <el-container style="height: 50vh;">
         <el-header>
@@ -32,11 +33,11 @@
                     @select="handleSelect">
                     <el-menu-item index="1">
                         <i class="el-icon-s-goods"></i>
-                        <span slot="title">商品管理</span>
+                        <span slot="title">商城</span>
                     </el-menu-item>
-                    <el-menu-item index="2" disabled style="color:#bbb;cursor:not-allowed;">
+                    <el-menu-item index="2">
                         <i class="el-icon-s-order"></i>
-                        <span slot="title">订单管理（无权限）</span>
+                        <span slot="title">我的订单</span>
                     </el-menu-item>
                     <el-menu-item index="3" disabled style="color:#bbb;cursor:not-allowed;">
                         <i class="el-icon-user"></i>
@@ -93,14 +94,27 @@ new Vue({
     el: '#app',
     data() {
         return {
-            username: '用户'
+            username: ''
         }
     },
+    created() {
+        this.fetchCurrentUser();
+    },
     methods: {
+        fetchCurrentUser() {
+            axios.get('/demo/api/user/current')
+                .then(res => {
+                    const user = res.data.body || {};
+                    this.username = user.nickname || user.username || '用户';
+                })
+                .catch(() => {
+                    window.location.href = '/demo/';
+                });
+        },
         handleSelect(key) {
             switch(key) {
                 case '1':
-                    window.location.href = '/demo/toProductList';
+                    window.location.href = '/demo/toMall';
                     break;
                 case '2':
                     window.location.href = '/demo/toOrderList';

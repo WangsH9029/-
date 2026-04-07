@@ -14,14 +14,14 @@
 <div id="app">
     <div class="content-container">
         <el-card>
-            <div slot="header"><span>添加商品</span></div>
+            <div slot="header"><span>{{ isAdmin ? '添加商品' : '发布商品' }}</span></div>
             <el-form :model="form" label-width="100px">
                 <el-form-item label="商品名称"><el-input v-model="form.name"></el-input></el-form-item>
                 <el-form-item label="分类"><el-input v-model="form.category"></el-input></el-form-item>
                 <el-form-item label="价格"><el-input v-model="form.price" type="number"></el-input></el-form-item>
                 <el-form-item label="库存"><el-input v-model="form.stock" type="number"></el-input></el-form-item>
                 <el-form-item label="单位"><el-input v-model="form.unit"></el-input></el-form-item>
-                <el-form-item label="农户">
+                <el-form-item label="农户" v-if="isAdmin">
                     <el-select v-model="form.farmerId" placeholder="请选择农户">
                         <el-option v-for="farmer in farmers" :key="farmer.id" :label="farmer.nickname" :value="farmer.id"></el-option>
                     </el-select>
@@ -40,14 +40,27 @@ new Vue({
     data(){
         return {
             form:{name:'',category:'',price:'',stock:'',unit:'',farmerId:''},
-            farmers:[]
+            farmers:[],
+            isAdmin:false
         }
     },
     created() {
-        axios.get('/demo/api/user/list?role=ROLE_FARMER')
+        axios.get('/demo/api/user/current')
             .then(res => {
-                console.log('农户接口返回：', res.data);
-                this.farmers = res.data.content || res.data;
+                const user = res.data.body || {};
+                this.isAdmin = user.role === 'ROLE_ADMIN';
+                if (this.isAdmin) {
+                    return axios.get('/demo/api/user/list?role=ROLE_FARMER');
+                }
+                return null;
+            })
+            .then(res => {
+                if (res) {
+                    this.farmers = res.data.content || res.data;
+                }
+            })
+            .catch(() => {
+                window.location.href = '/demo/';
             });
     },
     methods:{
@@ -57,16 +70,19 @@ new Vue({
                 category: this.form.category,
                 price: this.form.price,
                 stock: this.form.stock,
-                unit: this.form.unit,
-                farmer: { id: this.form.farmerId }
+                unit: this.form.unit
             };
+            if (this.isAdmin && this.form.farmerId) {
+                product.farmer = { id: this.form.farmerId };
+            }
             axios.post('/demo/api/product', product)
                 .then(() => {
                     this.$message.success('提交成功！');
                     setTimeout(()=>window.location.href='toProductList', 1000);
                 })
-                .catch(() => {
-                    this.$message.error('提交失败！');
+                .catch(err => {
+                    const msg = err.response?.data?.massage || err.response?.data?.message || '提交失败！';
+                    this.$message.error(msg);
                 });
         },
         onCancel(){window.location.href='toProductList';}

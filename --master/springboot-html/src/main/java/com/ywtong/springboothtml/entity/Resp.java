@@ -23,6 +23,14 @@ public class Resp<E> {
         return massage;
     }
 
+    public String getMsg() {
+        return massage;
+    }
+
+    public boolean isFlag() {
+        return "200".equals(code);
+    }
+
     public void setMassage(String massage) {
         this.massage = massage;
     }

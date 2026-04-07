@@ -82,18 +82,23 @@
                     if (valid) {
                         $.ajax({
                             url: '/demo/login',
+                            type: 'POST',
                             data: {
                                 account: this.form.account,
                                 password: this.form.password
                             },
                             success: (response) => {
+                                const success = response.code === '200';
                                 this.$message({
                                     message: response.msg,
-                                    type: response.flag ? 'success' : 'error'
+                                    type: success ? 'success' : 'error'
                                 });
-                                if (response.body === '管理员身份登入！') {
+                                if (!success || !response.body) {
+                                    return;
+                                }
+                                if (response.body.role === 'ROLE_ADMIN') {
                                     window.location.href = 'toMain';
-                                } else if (response.body === '农户身份登入！') {
+                                } else if (response.body.role === 'ROLE_FARMER') {
                                     window.location.href = 'toMainForFarmer';
                                 } else {
                                     window.location.href = 'toMainForUser';

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>农产品商城</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>
+        body { margin: 0; padding: 0; background: #f5f7fa; }
+        .content-container { margin: 20px; }
+        .search-bar { margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .product-card { min-height: 260px; }
+        .product-price { color: #f56c6c; font-size: 20px; font-weight: bold; margin: 12px 0; }
+        .product-meta { color: #666; line-height: 28px; }
+        .product-actions { margin-top: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .empty-tip { text-align: center; color: #999; padding: 60px 0; }
+        .pager { margin-top: 20px; text-align: right; }
+    </style>
+</head>
+<body>
+<script src="//unpkg.com/vue@2/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<div id="app">
+    <div class="content-container">
+        <el-card>
+            <div slot="header" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>农产品商城</span>
+                <el-button type="text" @click="goOrders">我的订单</el-button>
+            </div>
+
+            <div class="search-bar">
+                <el-input v-model="keyword" placeholder="请输入商品名称关键词" clearable style="width: 260px;" @keyup.enter.native="searchProducts"></el-input>
+                <el-select v-model="category" placeholder="请选择分类" clearable style="width: 180px;" @change="searchProducts">
+                    <el-option v-for="item in categoryOptions" :key="item" :label="item" :value="item"></el-option>
+                </el-select>
+                <el-button type="primary" @click="searchProducts">搜索</el-button>
+            </div>
+
+            <div v-if="products.length" class="product-grid">
+                <el-card v-for="item in products" :key="item.id" class="product-card" shadow="hover">
+                    <h3>{{ item.name }}</h3>
+                    <div class="product-meta">分类：{{ item.category || '未分类' }}</div>
+                    <div class="product-meta">农户：{{ farmerName(item) }}</div>
+                    <div class="product-meta">库存：{{ item.stock }}{{ item.unit || '' }}</div>
+                    <div class="product-meta">描述：{{ item.description || '暂无描述' }}</div>
+                    <div class="product-price">¥ {{ item.price }}</div>
+                    <div class="product-actions">
+                        <el-input-number v-model="quantities[item.id]" :min="1" :max="item.stock || 1" size="small"></el-input-number>
+                        <el-button type="success" size="small" @click="openCheckout(item)">立即下单</el-button>
+                    </div>
+                </el-card>
+            </div>
+            <div v-else class="empty-tip">暂无可购买商品</div>
+
+            <div class="pager">
+                <el-pagination
+                    background
+                    layout="prev, pager, next, total"
+                    :current-page="page + 1"
+                    :page-size="size"
+                    :total="total"
+                    @current-change="handlePageChange">
+                </el-pagination>
+            </div>
+        </el-card>
+
+        <el-dialog title="确认订单" :visible.sync="dialogVisible" width="520px">
+            <el-form :model="orderForm" :rules="rules" ref="orderForm" label-width="90px">
+                <el-form-item label="商品名称">
+                    <span>{{ selectedProduct.name }}</span>
+                </el-form-item>
+                <el-form-item label="购买数量">
+                    <span>{{ selectedQuantity }}</span>
+                </el-form-item>
+                <el-form-item label="订单金额">
+                    <span style="color:#f56c6c;font-weight:bold;">¥ {{ previewTotal }}</span>
+                </el-form-item>
+                <el-form-item label="收货人" prop="receiverName">
+                    <el-input v-model="orderForm.receiverName"></el-input>
+                </el-form-item>
+                <el-form-item label="联系电话" prop="phone">
+                    <el-input v-model="orderForm.phone"></el-input>
+                </el-form-item>
+                <el-form-item label="收货地址" prop="address">
+                    <el-input v-model="orderForm.address"></el-input>
+                </el-form-item>
+                <el-form-item label="支付方式" prop="paymentMethod">
+                    <el-select v-model="orderForm.paymentMethod" placeholder="请选择支付方式">
+                        <el-option label="微信支付" value="微信支付"></el-option>
+                        <el-option label="支付宝" value="支付宝"></el-option>
+                        <el-option label="银行卡" value="银行卡"></el-option>
+                    </el-select>
+                </el-form-item>
+            </el-form>
+            <div slot="footer">
+                <el-button @click="dialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="submitOrder">提交订单</el-button>
+            </div>
+        </el-dialog>
+    </div>
+</div>
+<script>
+new Vue({
+    el: '#app',
+    data() {
+        return {
+            products: [],
+            keyword: '',
+            category: '',
+            categoryOptions: ['蔬菜', '水果', '粮油', '禽蛋', '水产', '干货'],
+            quantities: {},
+            page: 0,
+            size: 8,
+            total: 0,
+            dialogVisible: false,
+            selectedProduct: {},
+            selectedQuantity: 1,
+            orderForm: {
+                receiverName: '',
+                phone: '',
+                address: '',
+                paymentMethod: '微信支付'
+            },
+            rules: {
+                receiverName: [{ required: true, message: '请输入收货人', trigger: 'blur' }],
+                address: [{ required: true, message: '请输入收货地址', trigger: 'blur' }],
+                paymentMethod: [{ required: true, message: '请选择支付方式', trigger: 'change' }],
+                phone: [
+                    { required: true, message: '请输入联系电话', trigger: 'blur' },
+                    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号码', trigger: 'blur' }
+                ]
+            }
+        }
+    },
+    computed: {
+        previewTotal() {
+            if (!this.selectedProduct.price) {
+                return '0.00';
+            }
+            return (Number(this.selectedProduct.price) * Number(this.selectedQuantity || 1)).toFixed(2);
+        }
+    },
+    created() {
+        axios.get('/demo/api/user/current')
+            .then(() => {
+                this.fetchProducts();
+            })
+            .catch(() => {
+                window.location.href = '/demo/';
+            });
+    },
+    methods: {
+        fetchProducts() {
+            axios.get('/demo/api/product/search', {
+                params: {
+                    keyword: this.keyword || undefined,
+                    category: this.category || undefined,
+                    page: this.page,
+                    size: this.size
+                }
+            }).then(res => {
+                this.products = res.data.content || [];
+                this.total = res.data.totalElements || this.products.length;
+                this.products.forEach(item => {
+                    if (!this.quantities[item.id]) {
+                        this.$set(this.quantities, item.id, 1);
+                    }
+                });
+            }).catch(err => {
+                const msg = err.response?.data?.massage || err.response?.data?.message || '获取商品失败';
+                this.$message.error(msg);
+            });
+        },
+        searchProducts() {
+            this.page = 0;
+            this.fetchProducts();
+        },
+        handlePageChange(page) {
+            this.page = page - 1;
+            this.fetchProducts();
+        },
+        farmerName(item) {
+            return item.farmer && (item.farmer.nickname || item.farmer.username) ? (item.farmer.nickname || item.farmer.username) : '未知农户';
+        },
+        openCheckout(item) {
+            const quantity = this.quantities[item.id] || 1;
+            if (quantity <= 0) {
+                this.$message.warning('购买数量必须大于0');
+                return;
+            }
+            this.selectedProduct = item;
+            this.selectedQuantity = quantity;
+            this.dialogVisible = true;
+        },
+        submitOrder() {
+            this.$refs.orderForm.validate(valid => {
+                if (!valid) return;
+                const payload = {
+                    receiverName: this.orderForm.receiverName,
+                    phone: this.orderForm.phone,
+                    address: this.orderForm.address,
+                    paymentMethod: this.orderForm.paymentMethod,
+                    items: [{
+                        productId: this.selectedProduct.id,
+                        quantity: this.selectedQuantity
+                    }]
+                };
+                axios.post('/demo/api/order', payload)
+                    .then(res => {
+                        if (!res.data || res.data.code !== '200') {
+                            const msg = res.data?.massage || res.data?.msg || '下单失败';
+                            this.$message.error(msg);
+                            return;
+                        }
+                        this.$message.success('下单成功');
+                        this.dialogVisible = false;
+                        this.fetchProducts();
+                        window.location.href = '/demo/toOrderList';
+                    })
+                    .catch(err => {
+                        const msg = err.response?.data?.massage || err.response?.data?.message || '下单失败';
+                        this.$message.error(msg);
+                    });
+            });
+        },
+        goOrders() {
+            window.location.href = '/demo/toOrderList';
+        }
+    }
+});
+</script>
+</body>
+</html>

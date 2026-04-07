@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 @Entity
-@Table(name = "ORDER")
+@Table(name = "`ORDER`")
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,7 +19,10 @@ public class Order {
     private BigDecimal totalAmount;
     private String status; // PENDING_PAYMENT, PAID, SHIPPED, COMPLETED, CANCELLED
     private String address;
+
+    @Column(length = 11)
     private String phone;
+
     private String receiverName;
     private String paymentMethod;
     private Date createTime;

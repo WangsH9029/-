@@ -15,6 +15,7 @@
 <body>
 <script src="//unpkg.com/vue@2/dist/vue.js"></script>
 <script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <div id="app">
     <el-container style="height: 50vh;">
         <el-header>
@@ -42,9 +43,9 @@
                         <i class="el-icon-user"></i>
                         <span slot="title">用户管理（无权限）</span>
                     </el-menu-item>
-                    <el-menu-item index="4">
+                    <el-menu-item index="4" disabled style="color:#bbb;cursor:not-allowed;">
                         <i class="el-icon-s-custom"></i>
-                        <span slot="title">农户管理</span>
+                        <span slot="title">农户管理（无权限）</span>
                     </el-menu-item>
                     <el-menu-item index="5">
                         <i class="el-icon-s-data"></i>
@@ -93,10 +94,23 @@ new Vue({
     el: '#app',
     data() {
         return {
-            username: '农户'
+            username: ''
         }
     },
+    created() {
+        this.fetchCurrentUser();
+    },
     methods: {
+        fetchCurrentUser() {
+            axios.get('/demo/api/user/current')
+                .then(res => {
+                    const user = res.data.body || {};
+                    this.username = user.nickname || user.username || '农户';
+                })
+                .catch(() => {
+                    window.location.href = '/demo/';
+                });
+        },
         handleSelect(key) {
             switch(key) {
                 case '1':

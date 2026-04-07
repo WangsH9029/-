@@ -15,6 +15,7 @@
 <body>
 <script src="//unpkg.com/vue@2/dist/vue.js"></script>
 <script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 <div id="app">
     <div class="content-container">
         <el-card>
@@ -46,23 +47,26 @@
 
             <!-- 农户列表 -->
             <el-table :data="farmers" style="width:100%" v-loading="loading">
-                <el-table-column prop="name" label="农户名称" width="150"></el-table-column>
-                <el-table-column prop="contact" label="联系人" width="120"></el-table-column>
+                <el-table-column prop="username" label="登录账号" width="150"></el-table-column>
+                <el-table-column prop="nickname" label="农户名称" width="150"></el-table-column>
                 <el-table-column prop="phone" label="联系电话" width="150"></el-table-column>
+                <el-table-column prop="email" label="邮箱" width="200"></el-table-column>
                 <el-table-column prop="address" label="地址"></el-table-column>
-                <el-table-column prop="area" label="种植面积(亩)" width="120"></el-table-column>
-                <el-table-column prop="crops" label="主要作物" width="150"></el-table-column>
-                <el-table-column prop="status" label="认证状态" width="100">
+                <el-table-column prop="isVerified" label="认证状态" width="100">
                     <template slot-scope="scope">
-                        <el-tag :type="getStatusType(scope.row.status)">{{getStatusName(scope.row.status)}}</el-tag>
+                        <el-tag :type="getStatusType(scope.row.isVerified)">{{getStatusName(scope.row.isVerified)}}</el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column prop="createTime" label="注册时间" width="180"></el-table-column>
+                <el-table-column prop="createTime" label="注册时间" width="180">
+                    <template slot-scope="scope">
+                        {{formatDate(scope.row.createTime)}}
+                    </template>
+                </el-table-column>
                 <el-table-column label="操作" width="250">
                     <template slot-scope="scope">
                         <el-button type="text" size="small" @click="handleView(scope.row)">查看</el-button>
                         <el-button type="text" size="small" @click="handleEdit(scope.row)">编辑</el-button>
-                        <el-button type="text" size="small" @click="handleVerify(scope.row)" v-if="scope.row.status === '2'">认证</el-button>
+                        <el-button type="text" size="small" @click="handleVerify(scope.row)" v-if="!scope.row.isVerified">认证</el-button>
                         <el-button type="text" size="small" style="color:red" @click="handleDelete(scope.row)">删除</el-button>
                     </template>
                 </el-table-column>
@@ -85,38 +89,20 @@
         <!-- 添加/编辑农户对话框 -->
         <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="600px">
             <el-form :model="farmerForm" :rules="rules" ref="farmerForm" label-width="100px">
-                <el-form-item label="农户名称" prop="name">
-                    <el-input v-model="farmerForm.name"></el-input>
-                </el-form-item>
-                <el-form-item label="联系人" prop="contact">
-                    <el-input v-model="farmerForm.contact"></el-input>
+                <el-form-item label="农户名称" prop="nickname">
+                    <el-input v-model="farmerForm.nickname" :disabled="isEdit" placeholder="将作为登录账号"></el-input>
                 </el-form-item>
                 <el-form-item label="联系电话" prop="phone">
                     <el-input v-model="farmerForm.phone"></el-input>
                 </el-form-item>
+                <el-form-item label="邮箱" prop="email">
+                    <el-input v-model="farmerForm.email"></el-input>
+                </el-form-item>
                 <el-form-item label="地址" prop="address">
                     <el-input type="textarea" v-model="farmerForm.address"></el-input>
                 </el-form-item>
-                <el-form-item label="种植面积" prop="area">
-                    <el-input-number v-model="farmerForm.area" :min="0" :precision="2"></el-input-number>
-                    <span class="unit">亩</span>
-                </el-form-item>
-                <el-form-item label="主要作物" prop="crops">
-                    <el-select v-model="farmerForm.crops" multiple placeholder="请选择主要作物">
-                        <el-option label="水稻" value="rice"></el-option>
-                        <el-option label="小麦" value="wheat"></el-option>
-                        <el-option label="玉米" value="corn"></el-option>
-                        <el-option label="大豆" value="soybean"></el-option>
-                        <el-option label="蔬菜" value="vegetables"></el-option>
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="认证材料" prop="certificates">
-                    <el-upload
-                        action="#"
-                        list-type="picture-card"
-                        :auto-upload="false">
-                        <i class="el-icon-plus"></i>
-                    </el-upload>
+                <el-form-item v-if="!isEdit">
+                    <el-alert title="默认密码为：123456，请提醒农户登录后修改密码" type="info" :closable="false"></el-alert>
                 </el-form-item>
             </el-form>
             <div slot="footer" class="dialog-footer">
@@ -128,40 +114,21 @@
         <!-- 查看农户详情对话框 -->
         <el-dialog title="农户详情" :visible.sync="viewDialogVisible" width="800px">
             <el-descriptions :column="2" border>
-                <el-descriptions-item label="农户名称">{{currentFarmer.name}}</el-descriptions-item>
-                <el-descriptions-item label="联系人">{{currentFarmer.contact}}</el-descriptions-item>
+                <el-descriptions-item label="登录账号">{{currentFarmer.username}}</el-descriptions-item>
+                <el-descriptions-item label="农户名称">{{currentFarmer.nickname}}</el-descriptions-item>
                 <el-descriptions-item label="联系电话">{{currentFarmer.phone}}</el-descriptions-item>
-                <el-descriptions-item label="地址">{{currentFarmer.address}}</el-descriptions-item>
-                <el-descriptions-item label="种植面积">{{currentFarmer.area}}亩</el-descriptions-item>
-                <el-descriptions-item label="主要作物">{{currentFarmer.crops}}</el-descriptions-item>
+                <el-descriptions-item label="邮箱">{{currentFarmer.email}}</el-descriptions-item>
+                <el-descriptions-item label="地址" :span="2">{{currentFarmer.address}}</el-descriptions-item>
                 <el-descriptions-item label="认证状态">
-                    <el-tag :type="getStatusType(currentFarmer.status)">{{getStatusName(currentFarmer.status)}}</el-tag>
+                    <el-tag :type="getStatusType(currentFarmer.isVerified)">{{getStatusName(currentFarmer.isVerified)}}</el-tag>
                 </el-descriptions-item>
-                <el-descriptions-item label="注册时间">{{currentFarmer.createTime}}</el-descriptions-item>
+                <el-descriptions-item label="注册时间">{{formatDate(currentFarmer.createTime)}}</el-descriptions-item>
             </el-descriptions>
-            <div class="farmer-info">
-                <h4>认证材料</h4>
-                <el-image 
-                    style="width: 200px; height: 200px"
-                    :src="currentFarmer.certificateUrl"
-                    :preview-src-list="[currentFarmer.certificateUrl]">
-                </el-image>
-            </div>
         </el-dialog>
 
         <!-- 认证对话框 -->
         <el-dialog title="农户认证" :visible.sync="verifyDialogVisible" width="500px">
-            <el-form :model="verifyForm" :rules="verifyRules" ref="verifyForm" label-width="100px">
-                <el-form-item label="认证结果" prop="result">
-                    <el-radio-group v-model="verifyForm.result">
-                        <el-radio label="1">通过</el-radio>
-                        <el-radio label="0">不通过</el-radio>
-                    </el-radio-group>
-                </el-form-item>
-                <el-form-item label="认证意见" prop="comment">
-                    <el-input type="textarea" v-model="verifyForm.comment"></el-input>
-                </el-form-item>
-            </el-form>
+            <p>确认通过该农户的认证申请吗？</p>
             <div slot="footer" class="dialog-footer">
                 <el-button @click="verifyDialogVisible = false">取 消</el-button>
                 <el-button type="primary" @click="submitVerify">确 定</el-button>
@@ -189,18 +156,12 @@
                 isEdit: false,
                 farmerForm: {
                     id: '',
-                    username: '',
                     nickname: '',
-                    contact: '',
                     phone: '',
                     address: '',
-                    area: 0,
-                    crops: [],
-                    certificates: [],
-                    isVerified: false
+                    email: ''
                 },
                 rules: {
-                    username: [{ required: true, message: '请输入登录账号', trigger: 'blur' }],
                     nickname: [{ required: true, message: '请输入农户名称', trigger: 'blur' }],
                     phone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }]
                 },
@@ -219,10 +180,15 @@
         methods: {
             fetchFarmers() {
                 this.loading = true;
-                axios.get('/api/user/list?role=ROLE_FARMER')
+                axios.get('/demo/api/user/list', {
+                    params: { role: 'ROLE_FARMER' }
+                })
                     .then(res => {
                         this.farmers = res.data;
                         this.total = res.data.length;
+                    })
+                    .catch(err => {
+                        this.$message.error('获取农户列表失败：' + (err.response?.data || err.message));
                     })
                     .finally(() => {
                         this.loading = false;
@@ -246,15 +212,10 @@
                 this.isEdit = false;
                 this.farmerForm = {
                     id: '',
-                    username: '',
                     nickname: '',
-                    contact: '',
                     phone: '',
                     address: '',
-                    area: 0,
-                    crops: [],
-                    certificates: [],
-                    isVerified: false
+                    email: ''
                 };
                 this.dialogVisible = true;
             },
@@ -268,23 +229,32 @@
                 this.$refs.farmerForm.validate(valid => {
                     if (!valid) return;
                     if (this.isEdit) {
-                        axios.put('/api/user/' + this.farmerForm.id, {
+                        axios.put('/demo/api/user/' + this.farmerForm.id, {
                             ...this.farmerForm,
                             role: 'ROLE_FARMER'
                         }).then(() => {
                             this.$message.success('编辑成功');
                             this.dialogVisible = false;
                             this.fetchFarmers();
+                        }).catch(err => {
+                            this.$message.error('编辑失败：' + (err.response?.data || err.message));
                         });
                     } else {
-                        axios.post('/api/user/register', {
-                            ...this.farmerForm,
+                        axios.post('/demo/api/user/register', {
+                            username: this.farmerForm.nickname,
+                            nickname: this.farmerForm.nickname,
+                            phone: this.farmerForm.phone,
+                            email: this.farmerForm.email,
+                            address: this.farmerForm.address,
                             role: 'ROLE_FARMER',
-                            password: '123456'
+                            password: '123456',
+                            isVerified: false
                         }).then(() => {
-                            this.$message.success('添加成功');
+                            this.$message.success('添加成功，默认密码：123456');
                             this.dialogVisible = false;
                             this.fetchFarmers();
+                        }).catch(err => {
+                            this.$message.error('添加失败：' + (err.response?.data || err.message));
                         });
                     }
                 });
@@ -292,10 +262,13 @@
             handleDelete(row) {
                 this.$confirm('确定要删除该农户吗？', '提示', { type: 'warning' })
                     .then(() => {
-                        axios.delete('/api/user/' + row.id)
+                        axios.delete('/demo/api/user/' + row.id)
                             .then(() => {
                                 this.$message.success('删除成功');
                                 this.fetchFarmers();
+                            })
+                            .catch(err => {
+                                this.$message.error('删除失败：' + (err.response?.data || err.message));
                             });
                     });
             },
@@ -308,6 +281,25 @@
             },
             getStatusName(status) {
                 return status ? '已认证' : '未认证';
+            },
+            formatDate(date) {
+                if (!date) return '';
+                return new Date(date).toLocaleString('zh-CN');
+            },
+            handleVerify(row) {
+                this.currentFarmer = row;
+                this.verifyDialogVisible = true;
+            },
+            submitVerify() {
+                axios.put('/demo/api/user/' + this.currentFarmer.id + '/verify', null, {
+                    params: { isVerified: true }
+                }).then(() => {
+                    this.$message.success('认证成功');
+                    this.verifyDialogVisible = false;
+                    this.fetchFarmers();
+                }).catch(err => {
+                    this.$message.error('认证失败：' + (err.response?.data || err.message));
+                });
             }
         }
     });

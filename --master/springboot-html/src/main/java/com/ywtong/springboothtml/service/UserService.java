@@ -71,18 +71,25 @@ public class UserService {
     public User updateUser(User user) {
         User existingUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
-        
-        // 如果密码被修改，需要重新加密
-        if (user.getPassword() != null && !user.getPassword().equals(existingUser.getPassword())) {
-            user.setPassword(md5(user.getPassword()));
+
+        existingUser.setUsername(user.getUsername());
+        existingUser.setNickname(user.getNickname());
+        existingUser.setPhone(user.getPhone());
+        existingUser.setEmail(user.getEmail());
+        existingUser.setAddress(user.getAddress());
+        existingUser.setUpdateTime(new Date());
+
+        if (user.getRole() != null) {
+            existingUser.setRole(user.getRole());
         }
-        
-        // 保留原有的一些字段
-        user.setCreateTime(existingUser.getCreateTime());
-        user.setUpdateTime(new Date());
-        user.setRole(existingUser.getRole()); // 角色不允许通过普通更新修改
-        
-        return userRepository.save(user);
+        if (user.getIsVerified() != null) {
+            existingUser.setIsVerified(user.getIsVerified());
+        }
+        if (user.getPassword() != null && !user.getPassword().trim().isEmpty()) {
+            existingUser.setPassword(md5(user.getPassword()));
+        }
+
+        return userRepository.save(existingUser);
     }
     
     // 删除用户
@@ -131,5 +138,48 @@ public class UserService {
     }
     public List<User> findAll() {
         return userRepository.findAll();
+    }
+
+    // 发送验证码（模拟，暂不真实发送）
+    public String sendVerificationCode(String phone) {
+        if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
+            throw new RuntimeException("手机号码格式不正确");
+        }
+        User user = userRepository.findByPhone(phone);
+        if (user == null) {
+            throw new RuntimeException("该手机号未注册");
+        }
+        // 模拟生成6位验证码
+        String code = String.format("%06d", (int)(Math.random() * 1000000));
+        // TODO: 实际应该调用短信接口发送验证码，这里暂时只返回验证码供测试
+        return code;
+    }
+
+    // 重置密码
+    public void resetPassword(String phone, String code, String newPassword) {
+        if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
+            throw new RuntimeException("手机号码格式不正确");
+        }
+        if (code == null || code.trim().isEmpty()) {
+            throw new RuntimeException("验证码不能为空");
+        }
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new RuntimeException("新密码不能为空");
+        }
+
+        User user = userRepository.findByPhone(phone);
+        if (user == null) {
+            throw new RuntimeException("该手机号未注册");
+        }
+
+        // TODO: 实际应该验证验证码是否正确且未过期，这里暂时跳过验证
+        // 为了演示，暂时接受任何6位数字验证码
+        if (!code.matches("^\\d{6}$")) {
+            throw new RuntimeException("验证码格式不正确");
+        }
+
+        user.setPassword(md5(newPassword));
+        user.setUpdateTime(new Date());
+        userRepository.save(user);
     }
 } 

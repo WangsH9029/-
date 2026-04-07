@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     User findByUsername(String username);
+    User findByPhone(String phone);
     boolean existsByUsername(String username);
     List<User> findByUsernameContainingOrNicknameContaining(String username, String nickname);
     List<User> findByRole(String role);

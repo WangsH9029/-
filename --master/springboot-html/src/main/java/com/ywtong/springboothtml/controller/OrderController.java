@@ -3,6 +3,7 @@ package com.ywtong.springboothtml.controller;
 import com.ywtong.springboothtml.entity.CreateOrderRequest;
 import com.ywtong.springboothtml.entity.Order;
 import com.ywtong.springboothtml.entity.Resp;
+import com.ywtong.springboothtml.entity.UpdateOrderContactRequest;
 import com.ywtong.springboothtml.entity.User;
 import com.ywtong.springboothtml.service.OrderService;
 import com.ywtong.springboothtml.service.UserService;
@@ -118,6 +119,17 @@ public class OrderController {
             throw new RuntimeException("仅普通用户可支付订单");
         }
         return orderService.payOrder(id, currentUser.getId());
+    }
+
+    @PutMapping("/{id}/contact")
+    public Order updateOrderContact(@PathVariable Long id,
+                                    @RequestBody UpdateOrderContactRequest request,
+                                    HttpSession session) {
+        User currentUser = getCurrentUser(session);
+        if (isAdmin(getCurrentRole(session)) || isFarmer(getCurrentRole(session))) {
+            throw new RuntimeException("仅普通用户可修改订单收货信息");
+        }
+        return orderService.updateOrderContact(id, currentUser.getId(), request);
     }
 
     @PutMapping("/{id}/cancel")

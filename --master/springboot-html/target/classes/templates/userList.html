@@ -14,6 +14,7 @@
 <body>
 <script src="//unpkg.com/vue@2/dist/vue.js"></script>
 <script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <div id="app">
     <div class="content-container">
         <el-card>
@@ -29,11 +30,11 @@
                         <el-input v-model="searchForm.username" placeholder="请输入用户名"></el-input>
                     </el-form-item>
                     <el-form-item label="角色">
-                        <el-select v-model="searchForm.role" placeholder="请选择角色">
+                        <el-select v-model="searchForm.role" placeholder="请选择角色" clearable>
                             <el-option label="全部" value=""></el-option>
-                            <el-option label="管理员" value="admin"></el-option>
-                            <el-option label="普通用户" value="user"></el-option>
-                            <el-option label="农户" value="farmer"></el-option>
+                            <el-option label="管理员" value="ROLE_ADMIN"></el-option>
+                            <el-option label="普通用户" value="ROLE_USER"></el-option>
+                            <el-option label="农户" value="ROLE_FARMER"></el-option>
                         </el-select>
                     </el-form-item>
                     <el-form-item>
@@ -44,7 +45,7 @@
             </div>
 
             <!-- 用户列表 -->
-            <el-table :data="users" style="width:100%" v-loading="loading">
+            <el-table :data="pagedUsers" style="width:100%" v-loading="loading">
                 <el-table-column prop="username" label="用户名" width="120"></el-table-column>
                 <el-table-column prop="nickname" label="昵称" width="120"></el-table-column>
                 <el-table-column prop="role" label="角色" width="100">
@@ -54,21 +55,19 @@
                 </el-table-column>
                 <el-table-column prop="phone" label="电话" width="150"></el-table-column>
                 <el-table-column prop="email" label="邮箱"></el-table-column>
-                <el-table-column prop="status" label="状态" width="100">
+                <el-table-column prop="address" label="地址" width="180"></el-table-column>
+                <el-table-column label="认证状态" width="100">
                     <template slot-scope="scope">
-                        <el-switch
-                            v-model="scope.row.status"
-                            :active-value="1"
-                            :inactive-value="0"
-                            @change="handleStatusChange(scope.row)">
-                        </el-switch>
+                        <el-tag v-if="scope.row.role === 'ROLE_FARMER'" :type="scope.row.isVerified ? 'success' : 'info'">
+                            {{ scope.row.isVerified ? '已认证' : '未认证' }}
+                        </el-tag>
+                        <span v-else>-</span>
                     </template>
                 </el-table-column>
                 <el-table-column prop="createTime" label="创建时间" width="180"></el-table-column>
                 <el-table-column label="操作" width="200">
                     <template slot-scope="scope">
                         <el-button type="text" size="small" @click="handleEdit(scope.row)">编辑</el-button>
-                        <el-button type="text" size="small" @click="handleResetPwd(scope.row)">重置密码</el-button>
                         <el-button type="text" size="small" style="color:red" @click="handleDelete(scope.row)">删除</el-button>
                     </template>
                 </el-table-column>
@@ -99,9 +98,9 @@
                 </el-form-item>
                 <el-form-item label="角色" prop="role">
                     <el-select v-model="userForm.role" placeholder="请选择角色">
-                        <el-option label="管理员" value="admin"></el-option>
-                        <el-option label="普通用户" value="user"></el-option>
-                        <el-option label="农户" value="farmer"></el-option>
+                        <el-option label="管理员" value="ROLE_ADMIN"></el-option>
+                        <el-option label="普通用户" value="ROLE_USER"></el-option>
+                        <el-option label="农户" value="ROLE_FARMER"></el-option>
                     </el-select>
                 </el-form-item>
                 <el-form-item label="电话" prop="phone">
@@ -109,6 +108,9 @@
                 </el-form-item>
                 <el-form-item label="邮箱" prop="email">
                     <el-input v-model="userForm.email"></el-input>
+                </el-form-item>
+                <el-form-item label="地址" prop="address">
+                    <el-input v-model="userForm.address"></el-input>
                 </el-form-item>
             </el-form>
             <div slot="footer" class="dialog-footer">
@@ -125,47 +127,30 @@ new Vue({
     data() {
         return {
             loading: false,
-            users: [
-                {
-                    username: 'admin',
-                    nickname: '管理员',
-                    role: 'admin',
-                    phone: '13800138000',
-                    email: 'admin@example.com',
-                    status: 1,
-                    createTime: '2024-01-01 12:00:00'
-                },
-                {
-                    username: 'user1',
-                    nickname: '张三',
-                    role: 'user',
-                    phone: '13800138001',
-                    email: 'user1@example.com',
-                    status: 1,
-                    createTime: '2024-01-02 12:00:00'
-                }
-            ],
+            users: [],
             searchForm: {
                 username: '',
                 role: ''
             },
             currentPage: 1,
             pageSize: 10,
-            total: 100,
+            total: 0,
             dialogVisible: false,
             dialogTitle: '添加用户',
             isEdit: false,
             userForm: {
+                id: null,
                 username: '',
                 nickname: '',
                 role: '',
                 phone: '',
-                email: ''
+                email: '',
+                address: '',
+                isVerified: false
             },
             rules: {
                 username: [
-                    { required: true, message: '请输入用户名', trigger: 'blur' },
-                    { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
+                    { required: true, message: '请输入用户名', trigger: 'blur' }
                 ],
                 nickname: [
                     { required: true, message: '请输入昵称', trigger: 'blur' }
@@ -182,50 +167,91 @@ new Vue({
             }
         }
     },
+    computed: {
+        pagedUsers() {
+            const start = (this.currentPage - 1) * this.pageSize;
+            const end = start + this.pageSize;
+            return this.users.slice(start, end);
+        }
+    },
+    created() {
+        this.fetchUsers();
+    },
     methods: {
+        fetchUsers() {
+            this.loading = true;
+            axios.get('/demo/api/user/list', {
+                params: {
+                    role: this.searchForm.role || undefined
+                }
+            }).then(res => {
+                const keyword = (this.searchForm.username || '').trim().toLowerCase();
+                const list = Array.isArray(res.data) ? res.data : [];
+                this.users = keyword
+                    ? list.filter(user => {
+                        const username = (user.username || '').toLowerCase();
+                        const nickname = (user.nickname || '').toLowerCase();
+                        return username.includes(keyword) || nickname.includes(keyword);
+                    })
+                    : list;
+                this.total = this.users.length;
+                if (this.currentPage > Math.ceil(this.total / this.pageSize) && this.total > 0) {
+                    this.currentPage = 1;
+                }
+            }).catch(err => {
+                const msg = err.response?.data?.message || '获取用户列表失败';
+                this.$message.error(msg);
+            }).finally(() => {
+                this.loading = false;
+            });
+        },
         getRoleType(role) {
             const types = {
-                'admin': 'danger',
-                'user': 'success',
-                'farmer': 'warning'
+                'ROLE_ADMIN': 'danger',
+                'ROLE_USER': 'success',
+                'ROLE_FARMER': 'warning'
             };
             return types[role] || 'info';
         },
         getRoleName(role) {
             const names = {
-                'admin': '管理员',
-                'user': '普通用户',
-                'farmer': '农户'
+                'ROLE_ADMIN': '管理员',
+                'ROLE_USER': '普通用户',
+                'ROLE_FARMER': '农户'
             };
             return names[role] || role;
         },
         handleSearch() {
-            // 实现搜索逻辑
-            console.log('搜索条件：', this.searchForm);
+            this.currentPage = 1;
+            this.fetchUsers();
         },
         resetSearch() {
             this.searchForm = {
                 username: '',
                 role: ''
             };
+            this.currentPage = 1;
+            this.fetchUsers();
         },
         handleSizeChange(val) {
             this.pageSize = val;
-            // 重新加载数据
+            this.currentPage = 1;
         },
         handleCurrentChange(val) {
             this.currentPage = val;
-            // 重新加载数据
         },
         handleAdd() {
             this.dialogTitle = '添加用户';
             this.isEdit = false;
             this.userForm = {
+                id: null,
                 username: '',
                 nickname: '',
-                role: '',
+                role: 'ROLE_USER',
                 phone: '',
-                email: ''
+                email: '',
+                address: '',
+                isVerified: false
             };
             this.dialogVisible = true;
         },
@@ -239,29 +265,45 @@ new Vue({
             this.$confirm('确认删除该用户吗？', '提示', {
                 type: 'warning'
             }).then(() => {
-                // 实现删除逻辑
-                this.$message.success('删除成功');
-            }).catch(() => {});
-        },
-        handleStatusChange(row) {
-            // 实现状态修改逻辑
-            this.$message.success(`用户${row.username}状态已${row.status === 1 ? '启用' : '禁用'}`);
-        },
-        handleResetPwd(row) {
-            this.$confirm('确认重置该用户的密码吗？', '提示', {
-                type: 'warning'
-            }).then(() => {
-                // 实现重置密码逻辑
-                this.$message.success('密码重置成功');
+                axios.delete('/demo/api/user/' + row.id)
+                    .then(() => {
+                        this.$message.success('删除成功');
+                        this.fetchUsers();
+                    })
+                    .catch(err => {
+                        const msg = err.response?.data?.message || '删除失败';
+                        this.$message.error(msg);
+                    });
             }).catch(() => {});
         },
         submitForm() {
             this.$refs.userForm.validate((valid) => {
-                if (valid) {
-                    // 实现提交逻辑
-                    this.$message.success(this.isEdit ? '修改成功' : '添加成功');
-                    this.dialogVisible = false;
+                if (!valid) {
+                    return;
                 }
+                const payload = {
+                    username: this.userForm.username,
+                    nickname: this.userForm.nickname,
+                    role: this.userForm.role,
+                    phone: this.userForm.phone,
+                    email: this.userForm.email,
+                    address: this.userForm.address,
+                    isVerified: this.userForm.isVerified
+                };
+                const request = this.isEdit
+                    ? axios.put('/demo/api/user/' + this.userForm.id, payload)
+                    : axios.post('/demo/api/user/register', {
+                        ...payload,
+                        password: '123456'
+                    });
+                request.then(() => {
+                    this.$message.success(this.isEdit ? '修改成功' : '添加成功，默认密码为123456');
+                    this.dialogVisible = false;
+                    this.fetchUsers();
+                }).catch(err => {
+                    const msg = err.response?.data?.message || (this.isEdit ? '修改失败' : '添加失败');
+                    this.$message.error(msg);
+                });
             });
         }
     }

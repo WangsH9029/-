@@ -25,7 +25,12 @@ spring:
     suffix: .html
   web:
     resources:
-      static-locations: classpath:/static/
+      static-locations: classpath:/static/,file:D:/code/Agricultural_system/upload/images/
+
+##上传配置
+upload:
+  path: D:/code/Agricultural_system/upload/images/
+  url-prefix: /demo/upload/images/
 
 ##日志配置
 logging:

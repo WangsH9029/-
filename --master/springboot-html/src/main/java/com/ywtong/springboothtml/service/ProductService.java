@@ -50,8 +50,15 @@ public class ProductService {
         Product existingProduct = getProductById(product.getId());
         product.setCreateTime(existingProduct.getCreateTime());
         product.setUpdateTime(new Date());
-        product.setDescription(existingProduct.getDescription());
-        product.setImages(existingProduct.getImages());
+
+        // 允许更新 description 和 images
+        if (product.getDescription() == null) {
+            product.setDescription(existingProduct.getDescription());
+        }
+        if (product.getImages() == null) {
+            product.setImages(existingProduct.getImages());
+        }
+
         product.setIsOnSale(product.getIsOnSale() != null ? product.getIsOnSale() : existingProduct.getIsOnSale());
         product.setViewCount(product.getViewCount() != null ? product.getViewCount() : existingProduct.getViewCount());
         product.setSalesCount(product.getSalesCount() != null ? product.getSalesCount() : existingProduct.getSalesCount());

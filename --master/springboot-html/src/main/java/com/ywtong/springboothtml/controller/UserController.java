@@ -2,6 +2,7 @@ package com.ywtong.springboothtml.controller;
 
 import com.ywtong.springboothtml.entity.LoginUserInfo;
 import com.ywtong.springboothtml.entity.Resp;
+import com.ywtong.springboothtml.entity.ResetPasswordRequest;
 import com.ywtong.springboothtml.entity.User;
 import com.ywtong.springboothtml.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,6 +93,27 @@ public class UserController {
     public List<User> searchUsers(@RequestParam String keyword, HttpSession session) {
         requireAdmin(session);
         return userService.searchUsers(keyword);
+    }
+
+    @PostMapping("/send-code")
+    public Resp<String> sendVerificationCode(@RequestParam String phone) {
+        try {
+            String code = userService.sendVerificationCode(phone);
+            // 实际应该发送短信，这里暂时返回验证码供测试
+            return Resp.success(code);
+        } catch (Exception e) {
+            return Resp.fail("500", e.getMessage());
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public Resp<String> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            userService.resetPassword(request.getPhone(), request.getCode(), request.getNewPassword());
+            return Resp.success("密码重置成功");
+        } catch (Exception e) {
+            return Resp.fail("500", e.getMessage());
+        }
     }
 
     private boolean isAdmin(HttpSession session) {

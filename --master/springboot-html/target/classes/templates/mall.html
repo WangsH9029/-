@@ -10,6 +10,7 @@
         .search-bar { margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; }
         .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
         .product-card { min-height: 260px; }
+        .product-image { width: 100%; height: 200px; object-fit: cover; border-radius: 4px; margin-bottom: 12px; background: #f5f7fa; }
         .product-price { color: #f56c6c; font-size: 20px; font-weight: bold; margin: 12px 0; }
         .product-meta { color: #666; line-height: 28px; }
         .product-actions { margin-top: 16px; display: flex; justify-content: space-between; align-items: center; }
@@ -39,6 +40,8 @@
 
             <div v-if="products.length" class="product-grid">
                 <el-card v-for="item in products" :key="item.id" class="product-card" shadow="hover">
+                    <img v-if="getFirstImage(item)" :src="getFirstImage(item)" class="product-image" :alt="item.name">
+                    <div v-else class="product-image" style="display:flex;align-items:center;justify-content:center;color:#999;">暂无图片</div>
                     <h3>{{ item.name }}</h3>
                     <div class="product-meta">分类：{{ item.category || '未分类' }}</div>
                     <div class="product-meta">农户：{{ farmerName(item) }}</div>
@@ -182,6 +185,11 @@ new Vue({
         },
         farmerName(item) {
             return item.farmer && (item.farmer.nickname || item.farmer.username) ? (item.farmer.nickname || item.farmer.username) : '未知农户';
+        },
+        getFirstImage(item) {
+            if (!item.images) return null;
+            const images = item.images.split(',').map(url => url.trim()).filter(Boolean);
+            return images.length > 0 ? images[0] : null;
         },
         openCheckout(item) {
             const quantity = this.quantities[item.id] || 1;

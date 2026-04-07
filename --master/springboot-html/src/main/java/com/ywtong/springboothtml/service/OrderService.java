@@ -5,6 +5,7 @@ import com.ywtong.springboothtml.entity.CreateOrderRequest;
 import com.ywtong.springboothtml.entity.Order;
 import com.ywtong.springboothtml.entity.OrderItem;
 import com.ywtong.springboothtml.entity.Product;
+import com.ywtong.springboothtml.entity.UpdateOrderContactRequest;
 import com.ywtong.springboothtml.entity.User;
 import com.ywtong.springboothtml.repository.OrderItemRepository;
 import com.ywtong.springboothtml.repository.OrderRepository;
@@ -182,6 +183,36 @@ public class OrderService {
             throw new RuntimeException("当前订单不可支付");
         }
         order.setStatus("PAID");
+        order.setUpdateTime(new Date());
+        return orderRepository.save(order);
+    }
+
+    @Transactional
+    public Order updateOrderContact(Long id, Long userId, UpdateOrderContactRequest request) {
+        Order order = getOrderById(id);
+        if (order.getUser() == null || !order.getUser().getId().equals(userId)) {
+            throw new RuntimeException("无权限修改该订单收货信息");
+        }
+        if (!"PENDING_PAYMENT".equals(order.getStatus())) {
+            throw new RuntimeException("只有待支付订单才能修改收货信息");
+        }
+        if (request == null) {
+            throw new RuntimeException("收货信息不能为空");
+        }
+        if (request.getAddress() == null || request.getAddress().trim().isEmpty()) {
+            throw new RuntimeException("地址不能为空");
+        }
+        if (request.getPhone() == null || request.getPhone().trim().isEmpty()) {
+            throw new RuntimeException("联系电话不能为空");
+        }
+
+        String phone = request.getPhone().trim();
+        if (!phone.matches("^1[3-9]\\d{9}$")) {
+            throw new RuntimeException("手机号码格式不正确，必须为11位数字，当前值: " + phone);
+        }
+
+        order.setAddress(request.getAddress().trim());
+        order.setPhone(phone);
         order.setUpdateTime(new Date());
         return orderRepository.save(order);
     }

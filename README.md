@@ -1,0 +1,3 @@
+http://localhost:8080/demo/进入，本地数据库mysql 帐密root/sa 123456
+本地图片地址D:/code/Agricultural_system/upload/images/
+管理员帐密admin 123456 农户1帐密 farmer1 654321 用户1帐密user1 123456 ...

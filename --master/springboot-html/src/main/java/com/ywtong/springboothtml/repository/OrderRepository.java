@@ -26,4 +26,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT FUNCTION('DATE_FORMAT', o.createTime, '%Y-%m-%d') as date, COALESCE(SUM(o.totalAmount), 0) as amount, COUNT(o) as count FROM Order o WHERE o.createTime >= :startDate GROUP BY FUNCTION('DATE_FORMAT', o.createTime, '%Y-%m-%d') ORDER BY date")
     List<Object[]> getSalesByDateRange(@Param("startDate") Date startDate);
+
+    @Query("SELECT oi.product.id, COALESCE(SUM(oi.quantity), 0) FROM OrderItem oi JOIN oi.order o WHERE o.createTime >= :startDate AND o.createTime < :endDate GROUP BY oi.product.id")
+    List<Object[]> getProductSalesByDateRange(@Param("startDate") Date startDate, @Param("endDate") Date endDate);
 }

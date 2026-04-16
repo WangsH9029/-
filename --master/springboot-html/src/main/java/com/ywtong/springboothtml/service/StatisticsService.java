@@ -118,6 +118,23 @@ public class StatisticsService {
     public List<HotProduct> getHotProducts(int limit) {
         Page<Product> topProducts = productRepository.findTopSellingProducts(PageRequest.of(0, limit));
 
+        // 计算本月和上月的时间范围
+        Calendar cal = Calendar.getInstance();
+        Date currentMonthEnd = cal.getTime();
+        cal.add(Calendar.MONTH, -1);
+        Date lastMonthEnd = cal.getTime();
+        cal.add(Calendar.MONTH, -1);
+        Date lastMonthStart = cal.getTime();
+
+        // 查询上月各商品销量
+        List<Object[]> lastMonthSales = orderRepository.getProductSalesByDateRange(lastMonthStart, lastMonthEnd);
+        Map<Long, Long> lastMonthSalesMap = new HashMap<>();
+        for (Object[] row : lastMonthSales) {
+            Long productId = ((Number) row[0]).longValue();
+            Long quantity = ((Number) row[1]).longValue();
+            lastMonthSalesMap.put(productId, quantity);
+        }
+
         List<HotProduct> hotProducts = new ArrayList<>();
         int rank = 1;
         for (Product product : topProducts.getContent()) {
@@ -125,12 +142,17 @@ public class StatisticsService {
                 ? product.getPrice().multiply(BigDecimal.valueOf(product.getSalesCount()))
                 : BigDecimal.ZERO;
 
+            // 计算趋势：对比当前总销量和上月销量
+            Long currentSales = product.getSalesCount() != null ? product.getSalesCount().longValue() : 0L;
+            Long lastMonthSalesCount = lastMonthSalesMap.getOrDefault(product.getId(), 0L);
+            Double trend = calculateTrend(currentSales, lastMonthSalesCount);
+
             hotProducts.add(new HotProduct(
                 rank++,
                 product.getName(),
                 product.getSalesCount() != null ? product.getSalesCount() : 0,
                 amount,
-                0.0
+                trend
             ));
         }
 

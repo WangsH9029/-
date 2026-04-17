@@ -16,6 +16,7 @@
 <script src="//unpkg.com/vue@2/dist/vue.js"></script>
 <script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
 <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="/demo/js/axios-config.js"></script>
 <div id="app">
     <div class="content-container">
         <el-card>
@@ -180,15 +181,12 @@
         methods: {
             fetchFarmers() {
                 this.loading = true;
-                axios.get('/demo/api/user/list', {
+                $axios.get('/demo/api/user/list', {
                     params: { role: 'ROLE_FARMER' }
                 })
                     .then(res => {
                         this.farmers = res.data;
                         this.total = res.data.length;
-                    })
-                    .catch(err => {
-                        this.$message.error('获取农户列表失败：' + (err.response?.data || err.message));
                     })
                     .finally(() => {
                         this.loading = false;
@@ -229,18 +227,16 @@
                 this.$refs.farmerForm.validate(valid => {
                     if (!valid) return;
                     if (this.isEdit) {
-                        axios.put('/demo/api/user/' + this.farmerForm.id, {
+                        $axios.put('/demo/api/user/' + this.farmerForm.id, {
                             ...this.farmerForm,
                             role: 'ROLE_FARMER'
                         }).then(() => {
                             this.$message.success('编辑成功');
                             this.dialogVisible = false;
                             this.fetchFarmers();
-                        }).catch(err => {
-                            this.$message.error('编辑失败：' + (err.response?.data || err.message));
                         });
                     } else {
-                        axios.post('/demo/api/user/register', {
+                        $axios.post('/demo/api/user/register', {
                             username: this.farmerForm.nickname,
                             nickname: this.farmerForm.nickname,
                             phone: this.farmerForm.phone,
@@ -253,8 +249,6 @@
                             this.$message.success('添加成功，默认密码：123456');
                             this.dialogVisible = false;
                             this.fetchFarmers();
-                        }).catch(err => {
-                            this.$message.error('添加失败：' + (err.response?.data || err.message));
                         });
                     }
                 });
@@ -262,13 +256,10 @@
             handleDelete(row) {
                 this.$confirm('确定要删除该农户吗？', '提示', { type: 'warning' })
                     .then(() => {
-                        axios.delete('/demo/api/user/' + row.id)
+                        $axios.delete('/demo/api/user/' + row.id)
                             .then(() => {
                                 this.$message.success('删除成功');
                                 this.fetchFarmers();
-                            })
-                            .catch(err => {
-                                this.$message.error('删除失败：' + (err.response?.data || err.message));
                             });
                     });
             },
@@ -291,14 +282,12 @@
                 this.verifyDialogVisible = true;
             },
             submitVerify() {
-                axios.put('/demo/api/user/' + this.currentFarmer.id + '/verify', null, {
+                $axios.put('/demo/api/user/' + this.currentFarmer.id + '/verify', null, {
                     params: { isVerified: true }
                 }).then(() => {
                     this.$message.success('认证成功');
                     this.verifyDialogVisible = false;
                     this.fetchFarmers();
-                }).catch(err => {
-                    this.$message.error('认证失败：' + (err.response?.data || err.message));
                 });
             }
         }

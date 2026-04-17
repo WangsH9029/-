@@ -23,6 +23,7 @@
 <script src="//unpkg.com/vue@2/dist/vue.js"></script>
 <script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="/demo/js/axios-config.js"></script>
 <div id="app">
     <div class="content-container">
         <el-card>
@@ -116,7 +117,7 @@ new Vue({
         }
     },
     created() {
-        axios.get('/demo/api/user/current')
+        $axios.get('/demo/api/user/current')
             .then(res => {
                 const user = res.data.body || {};
                 this.isAdmin = user.role === 'ROLE_ADMIN';
@@ -131,7 +132,7 @@ new Vue({
     methods: {
         fetchOrders() {
             this.loading = true;
-            axios.get('/demo/api/order/list')
+            $axios.get('/demo/api/order/list')
                 .then(res => {
                     this.orders = res.data.content || res.data;
                     if (!this.isAdmin && !this.isFarmer && this.orders.length === 0) {
@@ -148,28 +149,20 @@ new Vue({
         handleDelete(row) {
             this.$confirm('确定要删除该订单吗？', '提示', { type: 'warning' })
                 .then(() => {
-                    axios.delete('/demo/api/order/' + row.id)
+                    $axios.delete('/demo/api/order/' + row.id)
                         .then(() => {
                             this.$message.success('删除成功');
                             this.fetchOrders();
-                        })
-                        .catch(err => {
-                            const msg = err.response?.data?.massage || err.response?.data?.message || '删除失败';
-                            this.$message.error(msg);
                         });
                 });
         },
         handleCancel(row) {
             this.$confirm('确定要取消该订单吗？', '提示', { type: 'warning' })
                 .then(() => {
-                    axios.put('/demo/api/order/' + row.id + '/cancel')
+                    $axios.put('/demo/api/order/' + row.id + '/cancel')
                         .then(() => {
                             this.$message.success('取消成功');
                             this.fetchOrders();
-                        })
-                        .catch(err => {
-                            const msg = err.response?.data?.massage || err.response?.data?.message || '取消失败';
-                            this.$message.error(msg);
                         });
                 });
         },
@@ -184,15 +177,11 @@ new Vue({
         confirmEdit() {
             this.$refs.editForm.validate(valid => {
                 if (!valid) return;
-                axios.put('/demo/api/order/' + this.editOrder.id + '/contact', this.editForm)
+                $axios.put('/demo/api/order/' + this.editOrder.id + '/contact', this.editForm)
                     .then(() => {
                         this.$message.success('收货信息修改成功');
                         this.editDialogVisible = false;
                         this.fetchOrders();
-                    })
-                    .catch(err => {
-                        const msg = err.response?.data?.massage || err.response?.data?.message || '修改失败';
-                        this.$message.error(msg);
                     });
             });
         },
@@ -201,29 +190,22 @@ new Vue({
             this.payDialogVisible = true;
         },
         confirmPay() {
-            axios.put('/demo/api/order/' + this.payOrder.id + '/pay')
+            $axios.put('/demo/api/order/' + this.payOrder.id + '/pay')
                 .then(() => {
                     this.$message.success('支付成功');
                     this.payDialogVisible = false;
                     this.fetchOrders();
-                })
-                .catch(err => {
-                    const msg = err.response?.data?.massage || err.response?.data?.message || '支付失败';
-                    this.$message.error(msg);
                 });
         },
         handleProcess(row, status) {
             const actionText = status === 'SHIPPED' ? '发货' : '完成';
             this.$confirm('确定要执行' + actionText + '操作吗？', '提示', { type: 'warning' })
                 .then(() => {
-                    axios.put('/demo/api/order/' + row.id + '/status', null, {
+                    $axios.put('/demo/api/order/' + row.id + '/status', null, {
                         params: { status }
                     }).then(() => {
                         this.$message.success(actionText + '成功');
                         this.fetchOrders();
-                    }).catch(err => {
-                        const msg = err.response?.data?.massage || err.response?.data?.message || actionText + '失败';
-                        this.$message.error(msg);
                     });
                 });
         },

@@ -15,6 +15,7 @@
 <script src="//unpkg.com/vue@2/dist/vue.js"></script>
 <script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="/demo/js/axios-config.js"></script>
 <div id="app">
     <div class="content-container">
         <el-card>
@@ -180,7 +181,7 @@ new Vue({
     methods: {
         fetchUsers() {
             this.loading = true;
-            axios.get('/demo/api/user/list', {
+            $axios.get('/demo/api/user/list', {
                 params: {
                     role: this.searchForm.role || undefined
                 }
@@ -198,9 +199,6 @@ new Vue({
                 if (this.currentPage > Math.ceil(this.total / this.pageSize) && this.total > 0) {
                     this.currentPage = 1;
                 }
-            }).catch(err => {
-                const msg = err.response?.data?.message || '获取用户列表失败';
-                this.$message.error(msg);
             }).finally(() => {
                 this.loading = false;
             });
@@ -265,14 +263,10 @@ new Vue({
             this.$confirm('确认删除该用户吗？', '提示', {
                 type: 'warning'
             }).then(() => {
-                axios.delete('/demo/api/user/' + row.id)
+                $axios.delete('/demo/api/user/' + row.id)
                     .then(() => {
                         this.$message.success('删除成功');
                         this.fetchUsers();
-                    })
-                    .catch(err => {
-                        const msg = err.response?.data?.message || '删除失败';
-                        this.$message.error(msg);
                     });
             }).catch(() => {});
         },
@@ -291,8 +285,8 @@ new Vue({
                     isVerified: this.userForm.isVerified
                 };
                 const request = this.isEdit
-                    ? axios.put('/demo/api/user/' + this.userForm.id, payload)
-                    : axios.post('/demo/api/user/register', {
+                    ? $axios.put('/demo/api/user/' + this.userForm.id, payload)
+                    : $axios.post('/demo/api/user/register', {
                         ...payload,
                         password: '123456'
                     });
@@ -300,9 +294,6 @@ new Vue({
                     this.$message.success(this.isEdit ? '修改成功' : '添加成功，默认密码为123456');
                     this.dialogVisible = false;
                     this.fetchUsers();
-                }).catch(err => {
-                    const msg = err.response?.data?.message || (this.isEdit ? '修改失败' : '添加失败');
-                    this.$message.error(msg);
                 });
             });
         }

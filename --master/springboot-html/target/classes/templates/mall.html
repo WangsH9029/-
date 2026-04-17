@@ -10,7 +10,8 @@
         .search-bar { margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; }
         .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
         .product-card { min-height: 260px; }
-        .product-image { width: 100%; height: 200px; object-fit: cover; border-radius: 4px; margin-bottom: 12px; background: #f5f7fa; }
+        .product-image { width: 100%; height: 200px; object-fit: cover; border-radius: 4px; margin-bottom: 12px; background: #f5f7fa; transition: opacity 0.3s; }
+        .product-image:not(.loaded) { opacity: 0.6; }
         .product-price { color: #f56c6c; font-size: 20px; font-weight: bold; margin: 12px 0; }
         .product-meta { color: #666; line-height: 28px; }
         .product-actions { margin-top: 16px; display: flex; justify-content: space-between; align-items: center; }
@@ -22,6 +23,7 @@
 <script src="//unpkg.com/vue@2/dist/vue.js"></script>
 <script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="/demo/js/axios-config.js"></script>
 <div id="app">
     <div class="content-container">
         <el-card>
@@ -31,7 +33,7 @@
             </div>
 
             <div class="search-bar">
-                <el-input v-model="keyword" placeholder="请输入商品名称关键词" clearable style="width: 260px;" @keyup.enter.native="searchProducts"></el-input>
+                <el-input v-model="keyword" placeholder="请输入商品名称关键词" clearable style="width: 260px;" @input="debouncedSearch" @keyup.enter.native="searchProducts"></el-input>
                 <el-select v-model="category" placeholder="请选择分类" clearable style="width: 180px;" @change="searchProducts">
                     <el-option v-for="item in categoryOptions" :key="item" :label="item" :value="item"></el-option>
                 </el-select>
@@ -40,7 +42,7 @@
 
             <div v-if="products.length" class="product-grid">
                 <el-card v-for="item in products" :key="item.id" class="product-card" shadow="hover">
-                    <img v-if="getFirstImage(item)" :src="getFirstImage(item)" class="product-image" :alt="item.name">
+                    <img v-if="getFirstImage(item)" v-lazy="getFirstImage(item)" class="product-image" :alt="item.name">
                     <div v-else class="product-image" style="display:flex;align-items:center;justify-content:center;color:#999;">暂无图片</div>
                     <h3>{{ item.name }}</h3>
                     <div class="product-meta">分类：{{ item.category || '未分类' }}</div>
@@ -106,6 +108,9 @@
 <script>
 new Vue({
     el: '#app',
+    directives: {
+        lazy: window.$lazyLoadDirective
+    },
     data() {
         return {
             products: [],
@@ -145,7 +150,9 @@ new Vue({
         }
     },
     created() {
-        axios.get('/demo/api/user/current')
+        this.debouncedSearch = window.$debounce(this.searchProducts, 500);
+
+        $axios.get('/demo/api/user/current')
             .then(() => {
                 this.fetchProducts();
             })
@@ -155,7 +162,7 @@ new Vue({
     },
     methods: {
         fetchProducts() {
-            axios.get('/demo/api/product/search', {
+            $axios.get('/demo/api/product/search', {
                 params: {
                     keyword: this.keyword || undefined,
                     category: this.category || undefined,
@@ -170,9 +177,6 @@ new Vue({
                         this.$set(this.quantities, item.id, 1);
                     }
                 });
-            }).catch(err => {
-                const msg = err.response?.data?.massage || err.response?.data?.message || '获取商品失败';
-                this.$message.error(msg);
             });
         },
         searchProducts() {
@@ -214,7 +218,7 @@ new Vue({
                         quantity: this.selectedQuantity
                     }]
                 };
-                axios.post('/demo/api/order', payload)
+                $axios.post('/demo/api/order', payload)
                     .then(res => {
                         if (!res.data || res.data.code !== '200') {
                             const msg = res.data?.massage || res.data?.msg || '下单失败';
@@ -225,10 +229,6 @@ new Vue({
                         this.dialogVisible = false;
                         this.fetchProducts();
                         window.location.href = '/demo/toOrderList';
-                    })
-                    .catch(err => {
-                        const msg = err.response?.data?.massage || err.response?.data?.message || '下单失败';
-                        this.$message.error(msg);
                     });
             });
         },

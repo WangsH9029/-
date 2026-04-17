@@ -40,6 +40,8 @@
 <body>
 <script src="//unpkg.com/vue@2/dist/vue.js"></script>
 <script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="/demo/js/axios-config.js"></script>
 <div id="app">
     <div class="content-container">
         <!-- 数据概览 -->
@@ -188,51 +190,40 @@ new Vue({
     },
     methods: {
         fetchOverview() {
-            axios.get('/demo/api/statistics/overview')
+            $axios.get('/demo/api/statistics/overview')
                 .then(res => {
                     this.overview = res.data;
-                })
-                .catch(err => {
-                    this.$message.error('获取概览数据失败');
                 });
         },
         fetchSalesData() {
-            axios.get('/demo/api/statistics/sales', {
+            $axios.get('/demo/api/statistics/sales', {
                 params: { range: this.salesTimeRange }
             }).then(res => {
                 this.salesData = res.data;
                 this.initSalesChart();
-            }).catch(err => {
-                this.$message.error('获取销售数据失败');
             });
         },
         fetchUserData() {
-            axios.get('/demo/api/statistics/users', {
+            $axios.get('/demo/api/statistics/users', {
                 params: { range: this.userTimeRange }
             }).then(res => {
                 this.userData = res.data;
                 this.initUserChart();
-            }).catch(err => {
-                this.$message.error('获取用户数据失败');
             });
         },
         fetchFarmerData() {
-            axios.get('/demo/api/statistics/farmers', {
+            $axios.get('/demo/api/statistics/farmers', {
                 params: { range: this.farmerTimeRange }
             }).then(res => {
                 this.farmerData = res.data;
                 this.initFarmerChart();
-            }).catch(err => {
-                this.$message.error('获取农户数据失败');
             });
         },
         fetchHotProducts() {
-            axios.get('/demo/api/statistics/hot-products', {
+            $axios.get('/demo/api/statistics/hot-products', {
                 params: { limit: 5 }
             }).then(res => {
                 this.hotProducts = res.data;
-            }).catch(err => {
-                this.$message.error('获取热销商品失败');
             });
         },
         formatNumber(num) {

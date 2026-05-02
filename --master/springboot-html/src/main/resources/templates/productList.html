@@ -187,6 +187,7 @@ new Vue({
             });
         },
         fetchProducts() {
+            // 农户在商品管理页面只看自己的商品,管理员看所有商品
             const url = this.isFarmer ? '/demo/api/product/my' : '/demo/api/product/search';
             $axios.get(url)
                 .then(res => {

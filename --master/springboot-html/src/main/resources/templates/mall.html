@@ -14,7 +14,8 @@
         .product-image:not(.loaded) { opacity: 0.6; }
         .product-price { color: #f56c6c; font-size: 20px; font-weight: bold; margin: 12px 0; }
         .product-meta { color: #666; line-height: 28px; }
-        .product-actions { margin-top: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .product-actions { margin-top: 16px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .product-actions > div { display: flex; gap: 8px; }
         .empty-tip { text-align: center; color: #999; padding: 60px 0; }
         .pager { margin-top: 20px; text-align: right; }
     </style>
@@ -29,7 +30,12 @@
         <el-card>
             <div slot="header" style="display:flex;justify-content:space-between;align-items:center;">
                 <span>农产品商城</span>
-                <el-button type="text" @click="goOrders">我的订单</el-button>
+                <div>
+                    <el-badge :value="cartCount" :hidden="cartCount === 0" style="margin-right: 20px;">
+                        <el-button type="text" @click="showCart">购物车</el-button>
+                    </el-badge>
+                    <el-button type="text" @click="goOrders">我的订单</el-button>
+                </div>
             </div>
 
             <div class="search-bar">
@@ -52,7 +58,10 @@
                     <div class="product-price">¥ {{ item.price }}</div>
                     <div class="product-actions">
                         <el-input-number v-model="quantities[item.id]" :min="1" :max="item.stock || 1" size="small"></el-input-number>
-                        <el-button type="success" size="small" @click="openCheckout(item)">立即下单</el-button>
+                        <div>
+                            <el-button type="primary" size="small" @click="addToCart(item)">加入购物车</el-button>
+                            <el-button type="success" size="small" @click="openCheckout(item)">立即下单</el-button>
+                        </div>
                     </div>
                 </el-card>
             </div>
@@ -99,8 +108,41 @@
                 </el-form-item>
             </el-form>
             <div slot="footer">
-                <el-button @click="dialogVisible = false">取消</el-button>
-                <el-button type="primary" @click="submitOrder">提交订单</el-button>
+                <el-button @click="dialogVisible = false" :disabled="submitting">取消</el-button>
+                <el-button type="primary" @click="submitOrder" :loading="submitting" :disabled="submitting">
+                    {{ submitting ? '提交中...' : '提交订单' }}
+                </el-button>
+            </div>
+        </el-dialog>
+
+        <el-dialog title="购物车" :visible.sync="cartVisible" width="720px">
+            <el-table :data="cart" style="width: 100%">
+                <el-table-column prop="name" label="商品名称" width="200"></el-table-column>
+                <el-table-column label="单价" width="100">
+                    <template slot-scope="scope">¥{{ scope.row.price }}</template>
+                </el-table-column>
+                <el-table-column label="数量" width="150">
+                    <template slot-scope="scope">
+                        <el-input-number v-model="scope.row.quantity" :min="1" :max="scope.row.stock" size="small"></el-input-number>
+                    </template>
+                </el-table-column>
+                <el-table-column label="小计" width="100">
+                    <template slot-scope="scope">
+                        <span style="color:#f56c6c;">¥{{ (scope.row.price * scope.row.quantity).toFixed(2) }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" width="100">
+                    <template slot-scope="scope">
+                        <el-button type="text" @click="removeFromCart(scope.$index)">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div style="margin-top: 20px; text-align: right;">
+                <span style="font-size: 18px; font-weight: bold;">总计：<span style="color:#f56c6c;">¥{{ cartTotal }}</span></span>
+            </div>
+            <div slot="footer">
+                <el-button @click="cartVisible = false">继续购物</el-button>
+                <el-button type="primary" @click="checkoutCart" :disabled="cart.length === 0">结算</el-button>
             </div>
         </el-dialog>
     </div>
@@ -122,8 +164,11 @@ new Vue({
             size: 8,
             total: 0,
             dialogVisible: false,
+            cartVisible: false,
+            cart: [],
             selectedProduct: {},
             selectedQuantity: 1,
+            submitting: false,  // 防重复提交标志
             orderForm: {
                 receiverName: '',
                 phone: '',
@@ -147,6 +192,14 @@ new Vue({
                 return '0.00';
             }
             return (Number(this.selectedProduct.price) * Number(this.selectedQuantity || 1)).toFixed(2);
+        },
+        cartCount() {
+            return this.cart.length;
+        },
+        cartTotal() {
+            return this.cart.reduce((sum, item) => {
+                return sum + (Number(item.price) * Number(item.quantity));
+            }, 0).toFixed(2);
         }
     },
     created() {
@@ -206,8 +259,17 @@ new Vue({
             this.dialogVisible = true;
         },
         submitOrder() {
+            // 防重复提交检查
+            if (this.submitting) {
+                this.$message.warning('订单提交中,请勿重复操作');
+                return;
+            }
+
             this.$refs.orderForm.validate(valid => {
                 if (!valid) return;
+
+                this.submitting = true;  // 设置提交中状态
+
                 const payload = {
                     receiverName: this.orderForm.receiverName,
                     phone: this.orderForm.phone,
@@ -218,6 +280,7 @@ new Vue({
                         quantity: this.selectedQuantity
                     }]
                 };
+
                 $axios.post('/demo/api/order', payload)
                     .then(res => {
                         if (!res.data || res.data.code !== '200') {
@@ -227,6 +290,95 @@ new Vue({
                         }
                         this.$message.success('下单成功');
                         this.dialogVisible = false;
+                        this.fetchProducts();
+                        window.location.href = '/demo/toOrderList';
+                    })
+                    .catch(err => {
+                        this.$message.error('订单提交失败: ' + (err.message || '网络错误'));
+                    })
+                    .finally(() => {
+                        // 3秒后恢复按钮状态,防止用户快速重复提交
+                        setTimeout(() => {
+                            this.submitting = false;
+                        }, 3000);
+                    });
+            });
+        },
+        addToCart(item) {
+            const quantity = this.quantities[item.id] || 1;
+            if (quantity <= 0) {
+                this.$message.warning('购买数量必须大于0');
+                return;
+            }
+            const existingItem = this.cart.find(cartItem => cartItem.id === item.id);
+            if (existingItem) {
+                existingItem.quantity += quantity;
+                this.$message.success('已更新购物车数量');
+            } else {
+                this.cart.push({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    stock: item.stock,
+                    quantity: quantity
+                });
+                this.$message.success('已加入购物车');
+            }
+        },
+        showCart() {
+            this.cartVisible = true;
+        },
+        removeFromCart(index) {
+            this.cart.splice(index, 1);
+            this.$message.success('已移除');
+        },
+        checkoutCart() {
+            if (this.cart.length === 0) {
+                this.$message.warning('购物车为空');
+                return;
+            }
+            this.cartVisible = false;
+            this.dialogVisible = true;
+            this.selectedProduct = { name: '购物车商品' };
+            this.selectedQuantity = this.cart.reduce((sum, item) => sum + item.quantity, 0);
+        },
+        submitOrder() {
+            this.$refs.orderForm.validate(valid => {
+                if (!valid) return;
+
+                let items;
+                if (this.cart.length > 0 && this.selectedProduct.name === '购物车商品') {
+                    items = this.cart.map(item => ({
+                        productId: item.id,
+                        quantity: item.quantity
+                    }));
+                } else {
+                    items = [{
+                        productId: this.selectedProduct.id,
+                        quantity: this.selectedQuantity
+                    }];
+                }
+
+                const payload = {
+                    receiverName: this.orderForm.receiverName,
+                    phone: this.orderForm.phone,
+                    address: this.orderForm.address,
+                    paymentMethod: this.orderForm.paymentMethod,
+                    items: items
+                };
+
+                $axios.post('/demo/api/order', payload)
+                    .then(res => {
+                        if (!res.data || res.data.code !== '200') {
+                            const msg = res.data?.massage || res.data?.msg || '下单失败';
+                            this.$message.error(msg);
+                            return;
+                        }
+                        this.$message.success('下单成功');
+                        this.dialogVisible = false;
+                        if (this.selectedProduct.name === '购物车商品') {
+                            this.cart = [];
+                        }
                         this.fetchProducts();
                         window.location.href = '/demo/toOrderList';
                     });

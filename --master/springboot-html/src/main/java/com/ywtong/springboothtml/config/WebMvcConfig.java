@@ -1,5 +1,6 @@
 package com.ywtong.springboothtml.config;
 
+import com.ywtong.springboothtml.interceptor.JwtInterceptor;
 import com.ywtong.springboothtml.interceptor.RoleInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +16,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private String uploadPath;
 
     @Autowired
+    private JwtInterceptor jwtInterceptor;
+
+    @Autowired
     private RoleInterceptor roleInterceptor;
 
     @Override
@@ -25,14 +29,35 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(roleInterceptor)
-                .addPathPatterns("/api/**")  // 拦截所有API接口
+        // 注意:暂时注释掉JWT拦截器,保持Session机制兼容
+        // 如果要启用JWT,取消下面的注释,并注释掉RoleInterceptor
+
+
+        // JWT拦截器 - 验证Token并提取用户信息
+        registry.addInterceptor(jwtInterceptor)
+                .addPathPatterns("/api/**")
                 .excludePathPatterns(
-                        "/api/user/register",      // 排除注册接口
-                        "/api/user/send-code",     // 排除发送验证码接口
-                        "/api/user/reset-password", // 排除重置密码接口
-                        "/api/product/search",     // 排除商品搜索(游客可访问)
-                        "/api/product/{id}"        // 排除商品详情(游客可访问)
-                );
+                        "/api/user/register",
+                        "/api/user/send-code",
+                        "/api/user/reset-password",
+                        "/api/product/search",
+                        "/api/product/{id}"
+                )
+                .order(1);  // 优先级1,最先执行
+
+
+        // 角色权限拦截器 - 基于角色的权限控制
+        registry.addInterceptor(roleInterceptor)
+                .addPathPatterns("/api/**")
+                .excludePathPatterns(
+                        "/api/user/register",
+                        "/api/user/send-code",
+                        "/api/user/reset-password",
+                        "/api/product/search",
+                        "/api/product/{id}"
+                )
+                .order(2);  // 优先级2,在JWT拦截器之后执行
+
     }
 }
+

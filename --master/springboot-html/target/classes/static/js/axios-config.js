@@ -11,7 +11,11 @@
     // 请求拦截器
     axiosInstance.interceptors.request.use(
         config => {
-            // 可以在这里添加 token 等
+            // 从localStorage获取Token并添加到请求头
+            const token = localStorage.getItem('jwt_token');
+            if (token) {
+                config.headers['Authorization'] = 'Bearer ' + token;
+            }
             return config;
         },
         error => {
@@ -38,13 +42,15 @@
                         errorMessage = data?.massage || data?.message || '请求参数错误';
                         break;
                     case 401:
-                        errorMessage = '未授权，请重新登录';
+                        errorMessage = data?.message || '未授权，请重新登录';
+                        // 清除过期的Token
+                        localStorage.removeItem('jwt_token');
                         setTimeout(() => {
                             window.location.href = '/demo/';
                         }, 1500);
                         break;
                     case 403:
-                        errorMessage = '拒绝访问';
+                        errorMessage = data?.message || '拒绝访问';
                         break;
                     case 404:
                         errorMessage = '请求的资源不存在';

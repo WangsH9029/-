@@ -11,6 +11,7 @@ import java.io.PrintWriter;
 /**
  * 基于角色的权限拦截器
  * 实现细粒度的接口访问控制
+ * 支持从JWT Token(request attribute)或Session中获取用户信息
  */
 @Component
 public class RoleInterceptor implements HandlerInterceptor {
@@ -23,9 +24,17 @@ public class RoleInterceptor implements HandlerInterceptor {
                            HttpServletResponse response,
                            Object handler) throws Exception {
 
-        HttpSession session = request.getSession();
-        String role = (String) session.getAttribute(SESSION_ROLE);
-        Object userId = session.getAttribute(SESSION_USER_ID);
+        // 优先从request attribute获取(JWT拦截器设置的)
+        String role = (String) request.getAttribute(SESSION_ROLE);
+        Object userId = request.getAttribute(SESSION_USER_ID);
+
+        // 如果JWT中没有,则从Session获取(兼容旧方式)
+        if (role == null || userId == null) {
+            HttpSession session = request.getSession();
+            role = (String) session.getAttribute(SESSION_ROLE);
+            userId = session.getAttribute(SESSION_USER_ID);
+        }
+
         String uri = request.getRequestURI();
         String method = request.getMethod();
 

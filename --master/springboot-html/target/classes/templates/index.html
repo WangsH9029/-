@@ -232,13 +232,23 @@
                                 if (!success || !response.body) {
                                     return;
                                 }
-                                if (response.body.role === 'ROLE_ADMIN') {
-                                    window.location.href = 'toMain';
-                                } else if (response.body.role === 'ROLE_FARMER') {
-                                    window.location.href = 'toMainForFarmer';
-                                } else {
-                                    window.location.href = 'toMainForUser';
+
+                                // 保存JWT Token到localStorage
+                                if (response.body.token) {
+                                    localStorage.setItem('jwt_token', response.body.token);
                                 }
+
+                                // 延迟100ms后跳转,确保Token保存完成
+                                setTimeout(() => {
+                                    // 根据角色跳转到对应页面
+                                    if (response.body.role === 'ROLE_ADMIN') {
+                                        window.location.href = 'toMain';
+                                    } else if (response.body.role === 'ROLE_FARMER') {
+                                        window.location.href = 'toMainForFarmer';
+                                    } else {
+                                        window.location.href = 'toMainForUser';
+                                    }
+                                }, 100);
                             },
                             error: () => {
                                 this.$message.error('登录失败，请检查网络或服务器');

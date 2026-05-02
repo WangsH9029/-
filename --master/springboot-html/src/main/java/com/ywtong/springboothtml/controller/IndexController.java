@@ -4,6 +4,7 @@ import com.ywtong.springboothtml.entity.LoginUserInfo;
 import com.ywtong.springboothtml.entity.Resp;
 import com.ywtong.springboothtml.entity.User;
 import com.ywtong.springboothtml.service.UserService;
+import com.ywtong.springboothtml.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,9 @@ public class IndexController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
     @GetMapping("/")
     public String index() {
         return "index";
@@ -36,15 +40,23 @@ public class IndexController {
                                      HttpSession session) {
         try {
             User user = userService.login(account, password);
+
+            // 生成JWT Token
+            String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
+
+            // 同时保留Session机制(兼容旧代码)
             session.setAttribute(SESSION_USER_ID, user.getId());
             session.setAttribute(SESSION_USERNAME, user.getUsername());
             session.setAttribute(SESSION_ROLE, user.getRole());
+
             LoginUserInfo loginUserInfo = new LoginUserInfo(
                     user.getId(),
                     user.getUsername(),
                     user.getNickname(),
                     user.getRole()
             );
+            loginUserInfo.setToken(token);  // 设置Token
+
             return Resp.success(loginUserInfo);
         } catch (Exception e) {
             return Resp.fail("401", e.getMessage());

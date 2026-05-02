@@ -17,6 +17,7 @@
 <script src="//unpkg.com/vue@2/dist/vue.js"></script>
 <script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="/demo/js/axios-config.js"></script>
 <div id="app">
     <el-container style="height: 100vh;">
         <el-header>
@@ -107,7 +108,7 @@ new Vue({
     },
     methods: {
         fetchCurrentUser() {
-            axios.get('/demo/api/user/current')
+            $axios.get('/demo/api/user/current')
                 .then(res => {
                     const user = res.data.body || {};
                     this.username = user.nickname || user.username || '管理员';
@@ -139,11 +140,13 @@ new Vue({
             }
         },
         logout() {
-            axios.post('/demo/api/user/logout')
+            $axios.post('/demo/api/user/logout')
                 .then(() => {
+                    localStorage.removeItem('jwt_token');
                     window.location.href = '/demo/';
                 })
                 .catch(() => {
+                    localStorage.removeItem('jwt_token');
                     window.location.href = '/demo/';
                 });
         }

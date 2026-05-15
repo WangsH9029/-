@@ -29,4 +29,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT oi.product.id, COALESCE(SUM(oi.quantity), 0) FROM OrderItem oi JOIN oi.order o WHERE o.createTime >= :startDate AND o.createTime < :endDate GROUP BY oi.product.id")
     List<Object[]> getProductSalesByDateRange(@Param("startDate") Date startDate, @Param("endDate") Date endDate);
+
+    // 按状态统计订单数量
+    Long countByStatus(String status);
+
+    // 农户按状态统计订单数量
+    @Query("SELECT COUNT(DISTINCT o) FROM Order o JOIN OrderItem oi ON oi.order = o JOIN oi.product p WHERE p.farmer.id = :farmerId AND o.status = :status")
+    Long countFarmerOrdersByStatus(@Param("farmerId") Long farmerId, @Param("status") String status);
 }

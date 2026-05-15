@@ -234,10 +234,96 @@ public class OrderService {
 
     @Transactional
     public void deleteOrder(Long id) {
+        // 先删除订单明细
+        orderItemRepository.deleteByOrderId(id);
+        // 再删除订单
         orderRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void batchDeleteOrders(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new RuntimeException("订单ID列表不能为空");
+        }
+        // 先删除所有订单的明细
+        for (Long id : ids) {
+            orderItemRepository.deleteByOrderId(id);
+        }
+        // 再批量删除订单
+        orderRepository.deleteAllById(ids);
+    }
+
+    public void exportOrdersToCSV(javax.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        response.setContentType("text/csv; charset=UTF-8");
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Content-Disposition", "attachment; filename=orders_" +
+            new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".csv");
+
+        List<Order> orders = orderRepository.findAll();
+
+        java.io.PrintWriter writer = response.getWriter();
+
+        // 添加UTF-8 BOM头,让Excel正确识别编码
+        writer.write('\uFEFF');
+
+        // CSV表头
+        writer.println("订单编号,用户名,订单金额,订单状态,收货人,联系电话,收货地址,支付方式,创建时间");
+
+        // CSV数据行
+        for (Order order : orders) {
+            String username = order.getUser() != null ? order.getUser().getUsername() : "";
+            String statusName = getStatusName(order.getStatus());
+            String createTime = order.getCreateTime() != null ?
+                new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(order.getCreateTime()) : "";
+
+            writer.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s",
+                order.getOrderNo(),
+                username,
+                order.getTotalAmount(),
+                statusName,
+                order.getReceiverName(),
+                order.getPhone(),
+                order.getAddress(),
+                order.getPaymentMethod(),
+                createTime
+            ));
+        }
+        writer.flush();
+    }
+
+    private String getStatusName(String status) {
+        switch(status) {
+            case "COMPLETED": return "已完成";
+            case "CANCELLED": return "已取消";
+            case "PAID": return "已支付";
+            case "SHIPPED": return "已发货";
+            case "PENDING_PAYMENT": return "待支付";
+            default: return status;
+        }
     }
 
     private String generateOrderNo() {
         return "ORD" + new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
+    }
+
+    // 获取订单状态统计
+    public java.util.Map<String, Long> getOrderStatusStatistics(Long farmerId) {
+        java.util.Map<String, Long> statistics = new java.util.HashMap<>();
+        if (farmerId != null) {
+            // 农户统计
+            statistics.put("PENDING_PAYMENT", orderRepository.countFarmerOrdersByStatus(farmerId, "PENDING_PAYMENT"));
+            statistics.put("PAID", orderRepository.countFarmerOrdersByStatus(farmerId, "PAID"));
+            statistics.put("SHIPPED", orderRepository.countFarmerOrdersByStatus(farmerId, "SHIPPED"));
+            statistics.put("COMPLETED", orderRepository.countFarmerOrdersByStatus(farmerId, "COMPLETED"));
+            statistics.put("CANCELLED", orderRepository.countFarmerOrdersByStatus(farmerId, "CANCELLED"));
+        } else {
+            // 全局统计
+            statistics.put("PENDING_PAYMENT", orderRepository.countByStatus("PENDING_PAYMENT"));
+            statistics.put("PAID", orderRepository.countByStatus("PAID"));
+            statistics.put("SHIPPED", orderRepository.countByStatus("SHIPPED"));
+            statistics.put("COMPLETED", orderRepository.countByStatus("COMPLETED"));
+            statistics.put("CANCELLED", orderRepository.countByStatus("CANCELLED"));
+        }
+        return statistics;
     }
 }

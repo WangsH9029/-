@@ -43,6 +43,17 @@
                 <el-select v-model="category" placeholder="请选择分类" clearable style="width: 180px;" @change="searchProducts">
                     <el-option v-for="item in categoryOptions" :key="item" :label="item" :value="item"></el-option>
                 </el-select>
+                <el-select v-model="sortBy" placeholder="排序方式" clearable style="width: 180px;" @change="searchProducts">
+                    <el-option label="价格从低到高" value="price_asc"></el-option>
+                    <el-option label="价格从高到低" value="price_desc"></el-option>
+                    <el-option label="销量从高到低" value="sales_desc"></el-option>
+                </el-select>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="white-space: nowrap;">价格区间:</span>
+                    <el-input-number v-model="minPrice" :min="0" :precision="2" placeholder="最低价" controls-position="right" style="width: 140px;" @change="searchProducts"></el-input-number>
+                    <span>-</span>
+                    <el-input-number v-model="maxPrice" :min="0" :precision="2" placeholder="最高价" controls-position="right" style="width: 140px;" @change="searchProducts"></el-input-number>
+                </div>
                 <el-button type="primary" @click="searchProducts">搜索</el-button>
             </div>
 
@@ -159,6 +170,9 @@ new Vue({
             keyword: '',
             category: '',
             categoryOptions: ['蔬菜', '水果', '粮油', '禽蛋', '水产', '干货'],
+            sortBy: '',
+            minPrice: null,
+            maxPrice: null,
             quantities: {},
             page: 0,
             size: 8,
@@ -215,10 +229,30 @@ new Vue({
     },
     methods: {
         fetchProducts() {
+            // 解析排序参数
+            let sortByField = undefined;
+            let sortOrder = undefined;
+            if (this.sortBy) {
+                if (this.sortBy === 'price_asc') {
+                    sortByField = 'price';
+                    sortOrder = 'asc';
+                } else if (this.sortBy === 'price_desc') {
+                    sortByField = 'price';
+                    sortOrder = 'desc';
+                } else if (this.sortBy === 'sales_desc') {
+                    sortByField = 'salesCount';
+                    sortOrder = 'desc';
+                }
+            }
+
             $axios.get('/demo/api/product/search', {
                 params: {
                     keyword: this.keyword || undefined,
                     category: this.category || undefined,
+                    minPrice: this.minPrice || undefined,
+                    maxPrice: this.maxPrice || undefined,
+                    sortBy: sortByField,
+                    sortOrder: sortOrder,
                     page: this.page,
                     size: this.size
                 }

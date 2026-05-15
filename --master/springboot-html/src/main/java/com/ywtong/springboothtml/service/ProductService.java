@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 @Service
@@ -21,7 +22,7 @@ public class ProductService {
         return productRepository.save(product);
     }
 
-    public Page<Product> searchProducts(String keyword, String category, Pageable pageable) {
+    public Page<Product> searchProducts(String keyword, String category, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
         String normalizedKeyword = keyword == null ? null : keyword.trim();
         String normalizedCategory = category == null ? null : category.trim();
         if (normalizedKeyword != null && normalizedKeyword.isEmpty()) {
@@ -30,7 +31,7 @@ public class ProductService {
         if (normalizedCategory != null && normalizedCategory.isEmpty()) {
             normalizedCategory = null;
         }
-        return productRepository.searchMallProducts(normalizedKeyword, normalizedCategory, pageable);
+        return productRepository.searchMallProducts(normalizedKeyword, normalizedCategory, minPrice, maxPrice, pageable);
     }
 
     public Page<Product> getAllProducts(Pageable pageable) {

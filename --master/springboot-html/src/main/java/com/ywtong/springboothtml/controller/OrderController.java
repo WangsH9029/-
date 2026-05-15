@@ -14,7 +14,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/order")
@@ -112,6 +115,14 @@ public class OrderController {
         orderService.deleteOrder(id);
     }
 
+    @DeleteMapping("/batch")
+    public void batchDeleteOrders(@RequestBody List<Long> ids, HttpSession session) {
+        if (!isAdmin(getCurrentRole(session))) {
+            throw new RuntimeException("无权限批量删除订单");
+        }
+        orderService.batchDeleteOrders(ids);
+    }
+
     @PutMapping("/{id}/pay")
     public Order payOrder(@PathVariable Long id, HttpSession session) {
         User currentUser = getCurrentUser(session);
@@ -140,6 +151,27 @@ public class OrderController {
             throw new RuntimeException("无权限取消该订单");
         }
         orderService.cancelOrder(id);
+    }
+
+    @GetMapping("/statistics/status")
+    public java.util.Map<String, Long> getOrderStatusStatistics(HttpSession session) {
+        String role = getCurrentRole(session);
+        User currentUser = getCurrentUser(session);
+        if (isFarmer(role)) {
+            return orderService.getOrderStatusStatistics(currentUser.getId());
+        }
+        if (isAdmin(role)) {
+            return orderService.getOrderStatusStatistics(null);
+        }
+        throw new RuntimeException("无权限查看订单统计");
+    }
+
+    @GetMapping("/export")
+    public void exportOrders(HttpServletResponse response, HttpSession session) throws IOException {
+        if (!isAdmin(getCurrentRole(session))) {
+            throw new RuntimeException("无权限导出订单");
+        }
+        orderService.exportOrdersToCSV(response);
     }
 
     private User getCurrentUser(HttpSession session) {

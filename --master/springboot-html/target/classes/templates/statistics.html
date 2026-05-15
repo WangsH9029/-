@@ -147,6 +147,65 @@
                 </el-table-column>
             </el-table>
         </el-card>
+
+        <!-- AI数据分析助手 -->
+        <el-card class="statistics-card">
+            <div slot="header" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>AI数据分析助手</span>
+                <el-tag type="success" size="small">DeepSeek</el-tag>
+            </div>
+            <div style="margin-bottom:16px;color:#909399;font-size:13px;">
+                AI助手可根据当前平台数据为您提供经营分析建议，点击快捷问题或直接输入问题。
+            </div>
+
+            <!-- 快捷问题 -->
+            <div style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;">
+                <el-button size="small" plain @click="askQuick('请分析当前平台的整体销售情况，并给出经营建议')">销售分析</el-button>
+                <el-button size="small" plain @click="askQuick('根据热销商品数据，分析用户购买偏好并给出选品建议')">选品建议</el-button>
+                <el-button size="small" plain @click="askQuick('分析当前用户增长趋势，给出用户运营建议')">用户运营</el-button>
+                <el-button size="small" plain @click="askQuick('根据当前数据，给出提升平台销售额的具体建议')">提升销售</el-button>
+            </div>
+
+            <!-- 对话记录 -->
+            <div ref="chatBox" style="height:300px;overflow-y:auto;border:1px solid #ebeef5;border-radius:4px;padding:12px;margin-bottom:12px;background:#fafafa;">
+                <div v-if="chatHistory.length === 0" style="text-align:center;color:#c0c4cc;padding:60px 0;">
+                    <i class="el-icon-chat-dot-round" style="font-size:40px;"></i>
+                    <div style="margin-top:8px;">向AI助手提问，获取数据分析建议</div>
+                </div>
+                <div v-for="(msg, index) in chatHistory" :key="index" style="margin-bottom:16px;">
+                    <!-- 用户消息 -->
+                    <div v-if="msg.role === 'user'" style="display:flex;justify-content:flex-end;">
+                        <div style="max-width:70%;background:#409EFF;color:#fff;padding:8px 12px;border-radius:8px 8px 0 8px;font-size:13px;line-height:1.6;">
+                            {{msg.content}}
+                        </div>
+                    </div>
+                    <!-- AI消息 -->
+                    <div v-if="msg.role === 'ai'" style="display:flex;justify-content:flex-start;align-items:flex-start;gap:8px;">
+                        <div style="width:28px;height:28px;background:#67C23A;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;">AI</div>
+                        <div style="max-width:75%;background:#fff;border:1px solid #ebeef5;padding:8px 12px;border-radius:8px 8px 8px 0;font-size:13px;line-height:1.8;white-space:pre-wrap;">{{msg.content}}</div>
+                    </div>
+                    <!-- 加载中 -->
+                    <div v-if="msg.role === 'loading'" style="display:flex;justify-content:flex-start;align-items:center;gap:8px;">
+                        <div style="width:28px;height:28px;background:#67C23A;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;">AI</div>
+                        <div style="background:#fff;border:1px solid #ebeef5;padding:8px 12px;border-radius:8px;color:#909399;font-size:13px;">
+                            <i class="el-icon-loading"></i> 正在分析数据...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 输入框 -->
+            <div style="display:flex;gap:8px;">
+                <el-input
+                    v-model="userInput"
+                    placeholder="输入问题，例如：本月销售情况如何？"
+                    @keyup.enter.native="sendMessage"
+                    :disabled="aiLoading"
+                    clearable>
+                </el-input>
+                <el-button type="primary" @click="sendMessage" :loading="aiLoading" style="flex-shrink:0;">发送</el-button>
+            </div>
+        </el-card>
     </div>
 </div>
 
@@ -173,7 +232,11 @@ new Vue({
             salesData: [],
             userData: [],
             farmerData: [],
-            loading: true
+            loading: true,
+            // AI助手
+            chatHistory: [],
+            userInput: '',
+            aiLoading: false
         }
     },
     created() {
@@ -229,6 +292,52 @@ new Vue({
         formatNumber(num) {
             if (!num) return '0';
             return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        },
+        buildStatsContext() {
+            // 把当前统计数据打包成文字上下文给AI
+            const hotNames = this.hotProducts.slice(0, 3).map(p => p.name).join('、');
+            return "总销售额：¥" + this.overview.totalSales +
+                "，较上月" + (this.overview.salesTrend >= 0 ? "增长" : "下降") + Math.abs(this.overview.salesTrend) + "%" +
+                "；总订单数：" + this.overview.totalOrders +
+                "；用户总数：" + this.overview.totalUsers +
+                "；农户总数：" + this.overview.totalFarmers +
+                (hotNames ? "；热销商品：" + hotNames : "");
+        },
+        askQuick(question) {
+            this.userInput = question;
+            this.sendMessage();
+        },
+        sendMessage() {
+            const msg = this.userInput.trim();
+            if (!msg || this.aiLoading) return;
+
+            this.chatHistory.push({ role: 'user', content: msg });
+            this.chatHistory.push({ role: 'loading', content: '' });
+            this.userInput = '';
+            this.aiLoading = true;
+
+            this.$nextTick(() => {
+                const box = this.$refs.chatBox;
+                if (box) box.scrollTop = box.scrollHeight;
+            });
+
+            $axios.post('/demo/api/ai/analyze', {
+                message: msg,
+                context: this.buildStatsContext()
+            }).then(res => {
+                // 移除loading占位
+                this.chatHistory = this.chatHistory.filter(m => m.role !== 'loading');
+                this.chatHistory.push({ role: 'ai', content: res.data.reply });
+            }).catch(() => {
+                this.chatHistory = this.chatHistory.filter(m => m.role !== 'loading');
+                this.chatHistory.push({ role: 'ai', content: 'AI服务暂时不可用，请稍后重试。' });
+            }).finally(() => {
+                this.aiLoading = false;
+                this.$nextTick(() => {
+                    const box = this.$refs.chatBox;
+                    if (box) box.scrollTop = box.scrollHeight;
+                });
+            });
         },
         initSalesChart() {
             const chart = echarts.init(this.$refs.salesChart);

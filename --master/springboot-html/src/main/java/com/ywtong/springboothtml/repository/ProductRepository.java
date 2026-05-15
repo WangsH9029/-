@@ -7,12 +7,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    @Query("SELECT p FROM Product p WHERE p.isOnSale = true AND p.stock > 0 AND (:keyword IS NULL OR :keyword = '' OR p.name LIKE %:keyword%) AND (:category IS NULL OR :category = '' OR p.category = :category)")
+    @Query("SELECT p FROM Product p WHERE p.isOnSale = true AND p.stock > 0 AND (:keyword IS NULL OR :keyword = '' OR p.name LIKE %:keyword%) AND (:category IS NULL OR :category = '' OR p.category = :category) AND (:minPrice IS NULL OR p.price >= :minPrice) AND (:maxPrice IS NULL OR p.price <= :maxPrice)")
     Page<Product> searchMallProducts(@Param("keyword") String keyword,
                                      @Param("category") String category,
+                                     @Param("minPrice") BigDecimal minPrice,
+                                     @Param("maxPrice") BigDecimal maxPrice,
                                      Pageable pageable);
 
     @Query("SELECT p FROM Product p WHERE p.farmer.id = ?1")

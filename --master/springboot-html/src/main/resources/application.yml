@@ -37,3 +37,10 @@ logging:
   level:
     root: info
     com.ywtong.springboothtml: debug
+
+##AI配置
+ai:
+  deepseek:
+    api-key: sk-f3d58e0ea3634a3988599650682d95cb
+    api-url: https://api.deepseek.com/chat/completions
+    model: deepseek-chat

@@ -1,0 +1,309 @@
+@startuml 用户管理模块类图
+
+' 用户管理模块类图
+package "用户管理模块" {
+
+    class UserController {
+        - userService: UserService
+        + getUserList(role: String, session: HttpSession): List<User>
+        + getCurrentUser(session: HttpSession): Resp<LoginUserInfo>
+        + register(user: User): User
+        + updateUser(id: Long, user: User, session: HttpSession): User
+        + deleteUser(id: Long, session: HttpSession): void
+        + updateUserRole(id: Long, role: String, session: HttpSession): User
+        + verifyUser(id: Long, isVerified: boolean, session: HttpSession): User
+        + searchUsers(keyword: String, session: HttpSession): List<User>
+        - requireAdmin(session: HttpSession): void
+        - isAdmin(session: HttpSession): boolean
+        - getCurrentUserEntity(session: HttpSession): User
+    }
+
+    class UserService {
+        - userRepository: UserRepository
+        - md5(password: String): String
+        + register(user: User): User
+        + login(username: String, password: String): User
+        + getAllUsers(pageable: Pageable): Page<User>
+        + getUserById(id: Long): User
+        + updateUser(user: User): User
+        + deleteUser(id: Long): void
+        + updateUserRole(id: Long, role: String): User
+        + isFarmer(id: Long): boolean
+        + isAdmin(id: Long): boolean
+        + updateVerificationStatus(id: Long, isVerified: boolean): User
+        + searchUsers(keyword: String): List<User>
+        + findByRole(role: String): List<User>
+        + findAll(): List<User>
+        + sendVerificationCode(phone: String): String
+        + resetPassword(phone: String, code: String, newPassword: String): void
+    }
+
+    interface UserRepository {
+        + existsByUsername(username: String): boolean
+        + findByUsername(username: String): User
+        + findByPhone(phone: String): User
+        + findByRole(role: String): List<User>
+        + findByUsernameContainingOrNicknameContaining(username: String, nickname: String): List<User>
+        + countByRole(role: String): Long
+        + countByRoleAndCreateTimeAfter(role: String, createTime: Date): Long
+        + getUserGrowthByDateRange(role: String, startDate: Date): List<Object[]>
+    }
+
+    class User {
+        - id: Long
+        - username: String
+        - password: String
+        - nickname: String
+        - phone: String
+        - email: String
+        - address: String
+        - role: String
+        - isVerified: Boolean
+        - createTime: Date
+        - updateTime: Date
+    }
+
+    UserController --> UserService : 调用
+    UserService --> UserRepository : 调用
+    UserRepository ..> User : 操作
+    UserService ..> User : 处理
+}
+
+@enduml
+
+@startuml 商品管理模块类图
+
+' 商品管理模块类图
+package "商品管理模块" {
+
+    class ProductController {
+        - productService: ProductService
+        - userService: UserService
+        + getAllProducts(page: int, size: int): Page<Product>
+        + searchProducts(keyword: String, category: String, page: int, size: int): Page<Product>
+        + getProductById(id: Long): Product
+        + getMyProducts(session: HttpSession): List<Product>
+        + createProduct(product: Product, session: HttpSession): Product
+        + updateProduct(id: Long, product: Product, session: HttpSession): Product
+        + deleteProduct(id: Long, session: HttpSession): void
+        + updateProductStatus(id: Long, isOnSale: Boolean, session: HttpSession): Product
+        - getCurrentUser(session: HttpSession): User
+        - getCurrentRole(session: HttpSession): String
+        - isAdmin(role: String): boolean
+        - isFarmer(role: String): boolean
+    }
+
+    class ProductService {
+        - productRepository: ProductRepository
+        + createProduct(product: Product): Product
+        + searchProducts(keyword: String, category: String, pageable: Pageable): Page<Product>
+        + getAllProducts(pageable: Pageable): Page<Product>
+        + getProductById(id: Long): Product
+        + updateProduct(product: Product): Product
+        + deleteProduct(id: Long): void
+        + getProductsByFarmer(farmerId: Long): List<Product>
+        + updateProductStatus(id: Long, isOnSale: Boolean): Product
+        + incrementViewCount(id: Long): void
+        + incrementSalesCount(id: Long, quantity: Integer): void
+        - applyDefaultProductValues(product: Product): void
+    }
+
+    interface ProductRepository {
+        + searchMallProducts(keyword: String, category: String, pageable: Pageable): Page<Product>
+        + findByFarmerId(farmerId: Long): List<Product>
+        + findByCategory(category: String): List<Product>
+        + findByIsOnSale(isOnSale: Boolean): List<Product>
+        + findTopSellingProducts(pageable: Pageable): Page<Product>
+        + getProductCountByCategory(): List<Object[]>
+    }
+
+    class Product {
+        - id: Long
+        - name: String
+        - category: String
+        - price: BigDecimal
+        - stock: Integer
+        - unit: String
+        - description: String
+        - images: String
+        - farmer: User
+        - isOnSale: Boolean
+        - viewCount: Integer
+        - salesCount: Integer
+        - createTime: Date
+        - updateTime: Date
+    }
+
+    class User {
+        - id: Long
+        - username: String
+        - role: String
+    }
+
+    ProductController --> ProductService : 调用
+    ProductService --> ProductRepository : 调用
+    ProductRepository ..> Product : 操作
+    ProductService ..> Product : 处理
+    Product --> User : 关联农户
+}
+
+@enduml
+
+@startuml 订单管理模块类图
+
+' 订单管理模块类图
+package "订单管理模块" {
+
+    class OrderController {
+        - orderService: OrderService
+        + createOrder(request: CreateOrderRequest, session: HttpSession): Order
+        + getMyOrders(session: HttpSession): List<Order>
+        + getFarmerOrders(session: HttpSession): List<Order>
+        + getOrderById(id: Long, session: HttpSession): Order
+        + updateOrderStatus(id: Long, status: String, session: HttpSession): Order
+        + farmerUpdateOrderStatus(id: Long, status: String, session: HttpSession): Order
+        + cancelOrder(id: Long, session: HttpSession): Order
+        - getCurrentUserId(session: HttpSession): Long
+    }
+
+    class OrderService {
+        - orderRepository: OrderRepository
+        - orderItemRepository: OrderItemRepository
+        - productRepository: ProductRepository
+        - userRepository: UserRepository
+        + createOrder(request: CreateOrderRequest, userId: Long): Order
+        + getOrderById(id: Long): Order
+        + getOrdersByUser(userId: Long): List<Order>
+        + getOrdersByFarmer(farmerId: Long): List<Order>
+        + updateOrderStatus(id: Long, status: String): Order
+        + farmerUpdateOrderStatus(id: Long, farmerId: Long, status: String): Order
+        + cancelOrder(id: Long, userId: Long): Order
+        + userCanAccessOrder(orderId: Long, userId: Long): boolean
+        + farmerCanAccessOrder(orderId: Long, farmerId: Long): boolean
+        - generateOrderNo(): String
+        - validateOrderStatusTransition(currentStatus: String, newStatus: String): void
+    }
+
+    interface OrderRepository {
+        + findByUserId(userId: Long): List<Order>
+        + findByStatus(status: String): List<Order>
+        + findByOrderNo(orderNo: String): Order
+        + getTotalSalesAfter(startDate: Date): BigDecimal
+        + countOrdersAfter(startDate: Date): Long
+        + getSalesByDateRange(startDate: Date): List<Object[]>
+        + getProductSalesByDateRange(startDate: Date, endDate: Date): List<Object[]>
+    }
+
+    interface OrderItemRepository {
+        + findByOrderId(orderId: Long): List<OrderItem>
+        + findByProductId(productId: Long): List<OrderItem>
+    }
+
+    class Order {
+        - id: Long
+        - orderNo: String
+        - user: User
+        - totalAmount: BigDecimal
+        - status: String
+        - address: String
+        - phone: String
+        - receiverName: String
+        - paymentMethod: String
+        - createTime: Date
+        - updateTime: Date
+        - items: List<OrderItem>
+    }
+
+    class OrderItem {
+        - id: Long
+        - order: Order
+        - product: Product
+        - productName: String
+        - quantity: Integer
+        - price: BigDecimal
+        - subtotal: BigDecimal
+    }
+
+    class User {
+        - id: Long
+        - username: String
+        - role: String
+    }
+
+    class Product {
+        - id: Long
+        - name: String
+        - price: BigDecimal
+        - stock: Integer
+        - farmer: User
+    }
+
+    OrderController --> OrderService : 调用
+    OrderService --> OrderRepository : 调用
+    OrderService --> OrderItemRepository : 调用
+    OrderRepository ..> Order : 操作
+    OrderItemRepository ..> OrderItem : 操作
+
+    Order "1" *-- "many" OrderItem : 包含
+    Order "many" --> "1" User : 购买用户
+    OrderItem "many" --> "1" Product : 关联商品
+    OrderItem "many" --> "1" Order : 所属订单
+}
+
+@enduml
+
+@startuml 订单管理模块实体关系图
+
+' 订单管理模块实体关系图（强调关联关系）
+class Order {
+    - id: Long
+    - orderNo: String
+    - totalAmount: BigDecimal
+    - status: String
+    - address: String
+    - phone: String
+    - receiverName: String
+    - paymentMethod: String
+    - createTime: Date
+    - updateTime: Date
+}
+
+class OrderItem {
+    - id: Long
+    - productName: String
+    - quantity: Integer
+    - price: BigDecimal
+    - subtotal: BigDecimal
+}
+
+class User {
+    - id: Long
+    - username: String
+    - nickname: String
+    - role: String
+}
+
+class Product {
+    - id: Long
+    - name: String
+    - price: BigDecimal
+    - stock: Integer
+}
+
+Order "1" *-- "many" OrderItem : @OneToMany\n订单明细
+Order "many" --> "1" User : @ManyToOne\n购买用户
+OrderItem "many" --> "1" Product : @ManyToOne\n关联商品
+
+note right of Order
+  订单实体通过@OneToMany
+  与OrderItem建立一对多关系
+  记录订单明细
+end note
+
+note left of Order
+  订单实体通过@ManyToOne
+  与User建立多对一关系
+  记录购买用户
+end note
+
+@enduml

@@ -8,7 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
 
 import javax.servlet.http.HttpSession;
 
@@ -29,10 +32,22 @@ public class ProductController {
     public Page<Product> searchProducts(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String category,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortOrder,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return productService.searchProducts(keyword, category, pageable);
+
+        // 构建排序对象
+        Sort sort = Sort.unsorted();
+        if (sortBy != null && !sortBy.isEmpty()) {
+            Sort.Direction direction = "desc".equalsIgnoreCase(sortOrder) ? Sort.Direction.DESC : Sort.Direction.ASC;
+            sort = Sort.by(direction, sortBy);
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return productService.searchProducts(keyword, category, minPrice, maxPrice, pageable);
     }
 
     @GetMapping("/{id}")

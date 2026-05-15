@@ -17,6 +17,60 @@
             color: #909399;
             background: #fafafa;
         }
+
+        /* ========== 优化后的统计卡片样式 ========== */
+        .status-card .status-stats {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .status-card .stat-item {
+            flex: 1;
+            min-width: 100px;
+            text-align: center;
+            padding: 16px 8px;
+            background: #f5f7fa;
+            border-radius: 8px;
+            transition: all 0.3s;
+            cursor: default;
+        }
+        .status-card .stat-item:hover {
+            background: #ecf5ff;
+            transform: translateY(-2px);
+        }
+        .status-card .stat-label {
+            font-size: 14px;
+            color: #909399;
+            margin-bottom: 12px;
+        }
+        .status-card .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+        .status-card .stat-value.primary { color: #409EFF; }
+        .status-card .stat-value.warning { color: #E6A23C; }
+        .status-card .stat-value.success { color: #67C23A; }
+        .status-card .stat-value.info { color: #909399; }
+
+        /* 修复步骤条样式 - 确保横向显示 */
+        .el-steps {
+            margin: 5px 0;
+        }
+        .el-step__head.is-finish {
+            color: #67C23A;
+            border-color: #67C23A;
+        }
+        .el-step__title.is-finish {
+            color: #67C23A;
+        }
+        /* 步骤条文字缩小一点，适配更窄的列宽 */
+        .el-step__title {
+            font-size: 12px;
+        }
+        .el-step__description {
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -26,47 +80,99 @@
 <script src="/demo/js/axios-config.js"></script>
 <div id="app">
     <div class="content-container">
+        <!-- 农户订单统计卡片 - 优化版 -->
+        <el-card v-if="isFarmer" class="status-card">
+            <div slot="header">
+                <span>订单状态统计</span>
+            </div>
+            <div class="status-stats">
+                <div class="stat-item">
+                    <div class="stat-label">待发货</div>
+                    <div class="stat-value primary">{{ statistics.PAID || 0 }}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">已发货</div>
+                    <div class="stat-value warning">{{ statistics.SHIPPED || 0 }}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">已完成</div>
+                    <div class="stat-value success">{{ statistics.COMPLETED || 0 }}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">已取消</div>
+                    <div class="stat-value info">{{ statistics.CANCELLED || 0 }}</div>
+                </div>
+            </div>
+        </el-card>
+
         <el-card>
             <div slot="header">
-                <span>{{ pageTitle }}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>{{ pageTitle }}</span>
+                    <div v-if="isAdmin">
+                        <el-button type="danger" size="small" :disabled="selectedOrders.length === 0" @click="batchDelete">批量删除 ({{ selectedOrders.length }})</el-button>
+                        <el-button type="success" size="small" @click="exportOrders">导出订单</el-button>
+                    </div>
+                </div>
             </div>
-            <el-table :data="orders" style="width:100%" v-loading="loading">
+            <el-table :data="orders" style="width:100%" v-loading="loading" @selection-change="handleSelectionChange">
+                <!-- 复选框列 -->
+                <el-table-column type="selection" width="50" :selectable="checkSelectable"></el-table-column>
                 <el-table-column prop="orderNo" label="订单编号" width="180"></el-table-column>
-                <el-table-column v-if="isAdmin || isFarmer" label="客户名称" width="120">
+                <el-table-column v-if="isAdmin || isFarmer" label="客户名称" width="100">
                     <template slot-scope="scope">
                         {{ scope.row.user && (scope.row.user.nickname || scope.row.user.username) }}
                     </template>
                 </el-table-column>
-                <el-table-column prop="totalAmount" label="订单金额" width="120"></el-table-column>
-                <el-table-column label="订单状态" width="120">
+                <el-table-column prop="totalAmount" label="订单金额" width="100">
                     <template slot-scope="scope">
-                        <el-tag :type="getStatusTag(scope.row.status)">
+                        ¥{{ scope.row.totalAmount }}
+                    </template>
+                </el-table-column>
+                <el-table-column label="订单状态" width="110">
+                    <template slot-scope="scope">
+                        <!-- 用户端显示进度条 -->
+                        <div v-if="!isAdmin && !isFarmer">
+                            <el-steps :active="getStepActive(scope.row.status)" finish-status="success" align-center>
+                                <el-step title="待支付"></el-step>
+                                <el-step title="已支付"></el-step>
+                                <el-step title="已发货"></el-step>
+                                <el-step title="已完成"></el-step>
+                            </el-steps>
+                        </div>
+                        <!-- 农户和管理员显示标签 -->
+                        <el-tag v-else :type="getStatusTag(scope.row.status)" size="small">
                             {{ getStatusName(scope.row.status) }}
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column prop="createTime" label="创建时间"></el-table-column>
-                <el-table-column label="操作" width="320">
+                <el-table-column label="创建时间" width="160">
+                    <template slot-scope="scope">
+                        {{ formatTime(scope.row.createTime) }}
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" width="280" fixed="right">
                     <template slot-scope="scope">
                         <el-button v-if="isAdmin" type="text" size="small" @click="handleDelete(scope.row)" style="color:red">删除</el-button>
-                        <el-button v-if="!isAdmin && !isFarmer && scope.row.status === 'PENDING_PAYMENT'" type="text" size="small" @click="openEditDialog(scope.row)">修改收货信息</el-button>
+                        <el-button v-if="!isAdmin && !isFarmer && scope.row.status === 'PENDING_PAYMENT'" type="text" size="small" @click="openEditDialog(scope.row)">修改</el-button>
                         <el-button v-if="!isAdmin && !isFarmer && scope.row.status === 'PENDING_PAYMENT'" type="text" size="small" @click="openPayDialog(scope.row)">支付</el-button>
-                        <el-button v-if="!isAdmin && !isFarmer && scope.row.status === 'PENDING_PAYMENT'" type="text" size="small" @click="handleCancel(scope.row)">取消订单</el-button>
+                        <el-button v-if="!isAdmin && !isFarmer && scope.row.status === 'PENDING_PAYMENT'" type="text" size="small" @click="handleCancel(scope.row)">取消</el-button>
                         <el-button v-if="isFarmer && scope.row.status === 'PAID'" type="text" size="small" @click="handleProcess(scope.row, 'SHIPPED')">发货</el-button>
                         <el-button v-if="isFarmer && scope.row.status === 'SHIPPED'" type="text" size="small" @click="handleProcess(scope.row, 'COMPLETED')">完成</el-button>
-                        <el-button type="text" size="small">详情</el-button>
+                        <el-button type="text" size="small" @click="handleDetail(scope.row)">详情</el-button>
                     </template>
                 </el-table-column>
             </el-table>
         </el-card>
 
+        <!-- 修改收货信息弹窗 -->
         <el-dialog title="修改收货信息" :visible.sync="editDialogVisible" width="480px">
             <el-form :model="editForm" :rules="editRules" ref="editForm" label-width="90px">
                 <el-form-item label="联系电话" prop="phone">
-                    <el-input v-model="editForm.phone"></el-input>
+                    <el-input v-model="editForm.phone" placeholder="请输入11位手机号码"></el-input>
                 </el-form-item>
                 <el-form-item label="收货地址" prop="address">
-                    <el-input v-model="editForm.address"></el-input>
+                    <el-input v-model="editForm.address" placeholder="请输入详细收货地址"></el-input>
                 </el-form-item>
             </el-form>
             <div slot="footer">
@@ -75,6 +181,7 @@
             </div>
         </el-dialog>
 
+        <!-- 支付弹窗 -->
         <el-dialog title="订单支付" :visible.sync="payDialogVisible" width="480px">
             <div style="line-height: 30px; margin-bottom: 16px;">
                 <div>订单编号：{{ payOrder.orderNo || '-' }}</div>
@@ -87,149 +194,277 @@
                 <el-button type="primary" @click="confirmPay">确认支付</el-button>
             </div>
         </el-dialog>
+
+        <!-- 订单详情弹窗 -->
+        <el-dialog title="订单详情" :visible.sync="detailDialogVisible" width="600px">
+            <el-descriptions :column="2" border>
+                <el-descriptions-item label="订单编号">{{ detailOrder.orderNo }}</el-descriptions-item>
+                <el-descriptions-item label="订单状态">{{ getStatusName(detailOrder.status) }}</el-descriptions-item>
+                <el-descriptions-item label="订单金额">¥{{ detailOrder.totalAmount }}</el-descriptions-item>
+                <el-descriptions-item label="支付方式">{{ detailOrder.paymentMethod || '未支付' }}</el-descriptions-item>
+                <el-descriptions-item label="收货人">{{ detailOrder.receiverName }}</el-descriptions-item>
+                <el-descriptions-item label="联系电话">{{ detailOrder.phone }}</el-descriptions-item>
+                <el-descriptions-item label="收货地址" :span="2">{{ detailOrder.address }}</el-descriptions-item>
+                <el-descriptions-item label="创建时间" :span="2">{{ formatTime(detailOrder.createTime) }}</el-descriptions-item>
+            </el-descriptions>
+            <div slot="footer">
+                <el-button @click="detailDialogVisible = false">关闭</el-button>
+            </div>
+        </el-dialog>
     </div>
 </div>
 <script>
-new Vue({
-    el: '#app',
-    data() {
-        return {
-            orders: [],
-            loading: false,
-            pageTitle: '订单列表',
-            isAdmin: false,
-            isFarmer: false,
-            payDialogVisible: false,
-            payOrder: {},
-            editDialogVisible: false,
-            editOrder: {},
-            editForm: {
-                phone: '',
-                address: ''
-            },
-            editRules: {
-                address: [{ required: true, message: '请输入收货地址', trigger: 'blur' }],
-                phone: [
-                    { required: true, message: '请输入联系电话', trigger: 'blur' },
-                    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号码', trigger: 'blur' }
-                ]
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                orders: [],
+                loading: false,
+                pageTitle: '订单列表',
+                isAdmin: false,
+                isFarmer: false,
+                statistics: {},
+                selectedOrders: [],
+                payDialogVisible: false,
+                payOrder: {},
+                editDialogVisible: false,
+                editOrder: {},
+                editForm: {
+                    phone: '',
+                    address: ''
+                },
+                editRules: {
+                    address: [{ required: true, message: '请输入收货地址', trigger: 'blur' }],
+                    phone: [
+                        { required: true, message: '请输入联系电话', trigger: 'blur' },
+                        { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号码', trigger: 'blur' }
+                    ]
+                },
+                detailDialogVisible: false,
+                detailOrder: {}
             }
-        }
-    },
-    created() {
-        $axios.get('/demo/api/user/current')
-            .then(res => {
-                const user = res.data.body || {};
-                this.isAdmin = user.role === 'ROLE_ADMIN';
-                this.isFarmer = user.role === 'ROLE_FARMER';
-                this.pageTitle = this.isAdmin ? '订单列表' : (this.isFarmer ? '销售订单' : '我的订单');
-                this.fetchOrders();
-            })
-            .catch(() => {
-                window.location.href = '/demo/';
-            });
-    },
-    methods: {
-        fetchOrders() {
-            this.loading = true;
-            $axios.get('/demo/api/order/list')
+        },
+        created() {
+            $axios.get('/demo/api/user/current')
                 .then(res => {
-                    this.orders = res.data.content || res.data;
-                    if (!this.isAdmin && !this.isFarmer && this.orders.length === 0) {
-                        this.$message.info('您还没有订单');
-                    }
-                    if (this.isFarmer && this.orders.length === 0) {
-                        this.$message.info('暂无与您商品相关的订单');
+                    const user = res.data.body || {};
+                    this.isAdmin = user.role === 'ROLE_ADMIN';
+                    this.isFarmer = user.role === 'ROLE_FARMER';
+                    this.pageTitle = this.isAdmin ? '订单列表' : (this.isFarmer ? '销售订单' : '我的订单');
+                    this.fetchOrders();
+                    if (this.isFarmer) {
+                        this.fetchStatistics();
                     }
                 })
-                .finally(() => {
-                    this.loading = false;
+                .catch(() => {
+                    window.location.href = '/demo/';
                 });
         },
-        handleDelete(row) {
-            this.$confirm('确定要删除该订单吗？', '提示', { type: 'warning' })
-                .then(() => {
-                    $axios.delete('/demo/api/order/' + row.id)
-                        .then(() => {
-                            this.$message.success('删除成功');
-                            this.fetchOrders();
-                        });
-                });
-        },
-        handleCancel(row) {
-            this.$confirm('确定要取消该订单吗？', '提示', { type: 'warning' })
-                .then(() => {
-                    $axios.put('/demo/api/order/' + row.id + '/cancel')
-                        .then(() => {
-                            this.$message.success('取消成功');
-                            this.fetchOrders();
-                        });
-                });
-        },
-        openEditDialog(row) {
-            this.editOrder = row;
-            this.editForm = {
-                phone: row.phone || '',
-                address: row.address || ''
-            };
-            this.editDialogVisible = true;
-        },
-        confirmEdit() {
-            this.$refs.editForm.validate(valid => {
-                if (!valid) return;
-                $axios.put('/demo/api/order/' + this.editOrder.id + '/contact', this.editForm)
+        methods: {
+            checkSelectable(row, index) {
+                return this.isAdmin;
+            },
+            fetchOrders() {
+                this.loading = true;
+                $axios.get('/demo/api/order/list')
+                    .then(res => {
+                        this.orders = res.data.content || res.data;
+                        if (!this.isAdmin && !this.isFarmer && this.orders.length === 0) {
+                            this.$message.info('您还没有订单');
+                        }
+                        if (this.isFarmer && this.orders.length === 0) {
+                            this.$message.info('暂无与您商品相关的订单');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('获取订单列表失败:', err);
+                        this.$message.error('获取订单列表失败');
+                    })
+                    .finally(() => {
+                        this.loading = false;
+                    });
+            },
+            handleDelete(row) {
+                this.$confirm('确定要删除该订单吗？', '提示', { type: 'warning' })
                     .then(() => {
-                        this.$message.success('收货信息修改成功');
-                        this.editDialogVisible = false;
-                        this.fetchOrders();
-                    });
-            });
-        },
-        openPayDialog(row) {
-            this.payOrder = row;
-            this.payDialogVisible = true;
-        },
-        confirmPay() {
-            $axios.put('/demo/api/order/' + this.payOrder.id + '/pay')
-                .then(() => {
-                    this.$message.success('支付成功');
-                    this.payDialogVisible = false;
-                    this.fetchOrders();
+                        $axios.delete('/demo/api/order/' + row.id)
+                            .then(() => {
+                                this.$message.success('删除成功');
+                                this.fetchOrders();
+                                if (this.isFarmer) this.fetchStatistics();
+                            })
+                            .catch(() => this.$message.error('删除失败'));
+                    })
+                    .catch(() => {});
+            },
+            handleCancel(row) {
+                this.$confirm('确定要取消该订单吗？取消后订单将关闭', '提示', { type: 'warning' })
+                    .then(() => {
+                        $axios.put('/demo/api/order/' + row.id + '/cancel')
+                            .then(() => {
+                                this.$message.success('取消成功');
+                                this.fetchOrders();
+                            })
+                            .catch(() => this.$message.error('取消失败'));
+                    })
+                    .catch(() => {});
+            },
+            openEditDialog(row) {
+                this.editOrder = row;
+                this.editForm = {
+                    phone: row.phone || '',
+                    address: row.address || ''
+                };
+                this.editDialogVisible = true;
+            },
+            confirmEdit() {
+                this.$refs.editForm.validate(valid => {
+                    if (!valid) return;
+                    $axios.put('/demo/api/order/' + this.editOrder.id + '/contact', this.editForm)
+                        .then(() => {
+                            this.$message.success('收货信息修改成功');
+                            this.editDialogVisible = false;
+                            this.fetchOrders();
+                        })
+                        .catch(() => this.$message.error('修改失败'));
                 });
-        },
-        handleProcess(row, status) {
-            const actionText = status === 'SHIPPED' ? '发货' : '完成';
-            this.$confirm('确定要执行' + actionText + '操作吗？', '提示', { type: 'warning' })
-                .then(() => {
-                    $axios.put('/demo/api/order/' + row.id + '/status', null, {
-                        params: { status }
-                    }).then(() => {
-                        this.$message.success(actionText + '成功');
+            },
+            openPayDialog(row) {
+                if (row.status !== 'PENDING_PAYMENT') {
+                    this.$message.warning('该订单状态不可支付');
+                    return;
+                }
+                this.payOrder = row;
+                this.payDialogVisible = true;
+            },
+            confirmPay() {
+                $axios.put('/demo/api/order/' + this.payOrder.id + '/pay')
+                    .then(() => {
+                        this.$message.success('支付成功');
+                        this.payDialogVisible = false;
                         this.fetchOrders();
+                        if (this.isFarmer) this.fetchStatistics();
+                    })
+                    .catch(() => this.$message.error('支付失败'));
+            },
+            handleProcess(row, status) {
+                const actionText = status === 'SHIPPED' ? '发货' : '完成';
+                this.$confirm('确定要执行' + actionText + '操作吗？', '提示', { type: 'warning' })
+                    .then(() => {
+                        $axios.put('/demo/api/order/' + row.id + '/status', null, { params: { status } })
+                            .then(() => {
+                                this.$message.success(actionText + '成功');
+                                this.fetchOrders();
+                                if (this.isFarmer) this.fetchStatistics();
+                            })
+                            .catch(() => this.$message.error(actionText + '失败'));
+                    })
+                    .catch(() => {});
+            },
+            handleDetail(row) {
+                this.detailOrder = row;
+                this.detailDialogVisible = true;
+            },
+            getStatusTag(status) {
+                switch(status) {
+                    case 'COMPLETED': return 'success';
+                    case 'CANCELLED': return 'info';
+                    case 'PAID': return 'primary';
+                    case 'SHIPPED': return 'warning';
+                    default: return 'danger';
+                }
+            },
+            getStatusName(status) {
+                switch(status) {
+                    case 'COMPLETED': return '已完成';
+                    case 'CANCELLED': return '已取消';
+                    case 'PAID': return '已支付';
+                    case 'SHIPPED': return '已发货';
+                    case 'PENDING_PAYMENT': return '待支付';
+                    default: return status;
+                }
+            },
+            getStepActive(status) {
+                switch(status) {
+                    case 'PENDING_PAYMENT': return 0;
+                    case 'PAID': return 1;
+                    case 'SHIPPED': return 2;
+                    case 'COMPLETED': return 3;
+                    default: return 0;
+                }
+            },
+            fetchStatistics() {
+                $axios.get('/demo/api/order/statistics/status')
+                    .then(res => {
+                        this.statistics = res.data || {};
+                    })
+                    .catch(err => {
+                        console.error('获取订单统计失败:', err);
                     });
-                });
-        },
-        getStatusTag(status) {
-            switch(status) {
-                case 'COMPLETED': return 'success';
-                case 'CANCELLED': return 'info';
-                case 'PAID': return 'primary';
-                case 'SHIPPED': return 'warning';
-                default: return 'danger';
-            }
-        },
-        getStatusName(status) {
-            switch(status) {
-                case 'COMPLETED': return '已完成';
-                case 'CANCELLED': return '已取消';
-                case 'PAID': return '已支付';
-                case 'SHIPPED': return '已发货';
-                case 'PENDING_PAYMENT': return '待支付';
-                default: return status;
+            },
+            formatTime(time) {
+                if (!time) return '-';
+                const date = new Date(time);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hour = String(date.getHours()).padStart(2, '0');
+                const minute = String(date.getMinutes()).padStart(2, '0');
+                const second = String(date.getSeconds()).padStart(2, '0');
+                return year + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
+            },
+            handleSelectionChange(selection) {
+                this.selectedOrders = selection;
+            },
+            batchDelete() {
+                if (this.selectedOrders.length === 0) {
+                    this.$message.warning('请选择要删除的订单');
+                    return;
+                }
+                this.$confirm('确定要删除选中的 ' + this.selectedOrders.length + ' 个订单吗？', '批量删除', {
+                    type: 'warning',
+                    confirmButtonText: '确定删除',
+                    cancelButtonText: '取消'
+                }).then(() => {
+                    const ids = this.selectedOrders.map(order => order.id);
+                    $axios.delete('/demo/api/order/batch', { data: ids })
+                        .then(() => {
+                            this.$message.success('批量删除成功');
+                            this.selectedOrders = [];
+                            this.fetchOrders();
+                        })
+                        .catch(err => {
+                            this.$message.error('批量删除失败: ' + (err.message || '未知错误'));
+                        });
+                }).catch(() => {});
+            },
+            exportOrders() {
+                this.$confirm('确定要导出所有订单数据吗？', '导出确认', {
+                    type: 'info',
+                    confirmButtonText: '确定导出',
+                    cancelButtonText: '取消'
+                }).then(() => {
+                    $axios.get('/demo/api/order/export', { responseType: 'blob' })
+                        .then(response => {
+                            const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' });
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            const filename = 'orders_' + new Date().getTime() + '.csv';
+                            link.setAttribute('download', filename);
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            window.URL.revokeObjectURL(url);
+                            this.$message.success('订单导出成功');
+                        })
+                        .catch(err => {
+                            this.$message.error('导出失败: ' + (err.message || '未知错误'));
+                        });
+                }).catch(() => {});
             }
         }
-    }
-});
+    });
 </script>
 </body>
 </html>

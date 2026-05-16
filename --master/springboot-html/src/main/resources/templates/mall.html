@@ -70,6 +70,7 @@
                     <div class="product-actions">
                         <el-input-number v-model="quantities[item.id]" :min="1" :max="item.stock || 1" size="small"></el-input-number>
                         <div>
+                            <el-button type="text" size="small" @click="viewDetail(item)">详情</el-button>
                             <el-button type="primary" size="small" @click="addToCart(item)">加入购物车</el-button>
                             <el-button type="success" size="small" @click="openCheckout(item)">立即下单</el-button>
                         </div>
@@ -269,6 +270,9 @@ new Vue({
         searchProducts() {
             this.page = 0;
             this.fetchProducts();
+        },
+        viewDetail(item) {
+            window.location.href = '/demo/toProductDetail?id=' + item.id;
         },
         handlePageChange(page) {
             this.page = page - 1;

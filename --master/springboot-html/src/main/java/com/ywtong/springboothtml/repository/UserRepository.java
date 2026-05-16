@@ -15,6 +15,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByUsernameContainingOrNicknameContaining(String username, String nickname);
     List<User> findByRole(String role);
 
+    @Query("SELECT u FROM User u WHERE u.role = :role AND (:keyword IS NULL OR :keyword = '' OR u.username LIKE %:keyword% OR u.nickname LIKE %:keyword%) AND (:isVerified IS NULL OR u.isVerified = :isVerified)")
+    List<User> findFarmersByKeywordAndVerified(@Param("role") String role, @Param("keyword") String keyword, @Param("isVerified") Boolean isVerified);
+
     @Query("SELECT COUNT(u) FROM User u WHERE u.role = :role")
     Long countByRole(@Param("role") String role);
 

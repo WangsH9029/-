@@ -136,6 +136,10 @@ public class UserService {
     public List<User> findByRole(String role) {
         return userRepository.findByRole(role);
     }
+
+    public List<User> findFarmersByFilter(String keyword, Boolean isVerified) {
+        return userRepository.findFarmersByKeywordAndVerified("ROLE_FARMER", keyword, isVerified);
+    }
     public List<User> findAll() {
         return userRepository.findAll();
     }

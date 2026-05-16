@@ -2,15 +2,119 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>农产品交易平台</title>
+    <title>农产品交易平台 - 管理端</title>
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <style>
-        body { margin: 0; padding: 0; }
-        .el-header { background-color: #409EFF; color: white; line-height: 60px; }
-        .el-aside { background-color: #545c64; color: white; }
-        .el-menu { border-right: none; }
-        .content-container { padding: 20px; }
+        body { margin: 0; padding: 0; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .el-header {
+            background: linear-gradient(135deg, #1a6b3c, #2d9e5f);
+            color: white; line-height: 60px; padding: 0 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-logo { font-size: 26px; }
+        .header-title { font-size: 18px; font-weight: 600; letter-spacing: 1px; }
+        .header-badge {
+            background: rgba(255,255,255,0.2); color: white;
+            font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 4px;
+        }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .header-user { font-size: 14px; opacity: 0.9; }
+        .header-user span { font-weight: 600; }
+        .el-aside { background: #2c3e50; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
+        .el-menu { border-right: none; padding-top: 8px; }
+        .el-menu-item {
+            height: 50px; line-height: 50px;
+            margin: 2px 8px; border-radius: 8px; transition: all 0.2s;
+        }
+        .el-menu-item:hover { background: rgba(255,255,255,0.1) !important; }
+        .el-menu-item.is-active { background: rgba(45,158,95,0.3) !important; }
+        .sidebar-label {
+            font-size: 11px; color: rgba(255,255,255,0.4);
+            padding: 12px 20px 4px; letter-spacing: 1px;
+        }
         .content-iframe { width: 100%; height: calc(100vh - 60px); border: none; }
+        .welcome-page { padding: 32px; background: #f5f7fa; min-height: calc(100vh - 60px); }
+        .stat-cards { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+        .stat-card {
+            flex: 1; min-width: 160px; background: white; border-radius: 12px;
+            padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-left: 4px solid #2d9e5f;
+        }
+        .stat-card .label { font-size: 13px; color: #909399; margin-bottom: 8px; }
+        .stat-card .value { font-size: 28px; font-weight: bold; color: #303133; }
+        .quick-actions { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+        .quick-card {
+            flex: 1; min-width: 120px; background: white; border-radius: 12px;
+            padding: 20px; text-align: center; cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        .quick-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); border-color: #2d9e5f; }
+        .quick-card .icon { font-size: 28px; margin-bottom: 8px; }
+        .quick-card .label { font-size: 13px; color: #303133; font-weight: 500; }
+
+        /* 悬浮AI助手 */
+        .ai-float-btn {
+            position: fixed; right: 24px; bottom: 32px;
+            width: 52px; height: 52px; border-radius: 50%;
+            background: linear-gradient(135deg, #2d9e5f, #1a6b3c);
+            color: white; font-size: 22px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 4px 16px rgba(45,158,95,0.5);
+            z-index: 9999; transition: all 0.2s; user-select: none;
+        }
+        .ai-float-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(45,158,95,0.6); }
+        .ai-dialog-mask {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3); z-index: 9998;
+            display: flex; align-items: flex-end; justify-content: flex-end;
+            padding: 0 24px 96px 0;
+        }
+        .ai-dialog {
+            width: 360px; background: white; border-radius: 16px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+            display: flex; flex-direction: column; overflow: hidden; max-height: 520px;
+        }
+        .ai-dialog-header {
+            background: linear-gradient(135deg, #1a6b3c, #2d9e5f);
+            color: white; padding: 14px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .ai-dialog-header-left { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+        .ai-dialog-close { cursor: pointer; font-size: 18px; opacity: 0.8; }
+        .ai-dialog-close:hover { opacity: 1; }
+        .ai-chat-box {
+            flex: 1; overflow-y: auto; padding: 16px; background: #f8fafb;
+            min-height: 280px; max-height: 340px;
+        }
+        .ai-empty { text-align: center; color: #c0c4cc; padding: 40px 0; font-size: 13px; }
+        .ai-empty .icon { font-size: 36px; margin-bottom: 8px; }
+        .chat-msg { margin-bottom: 14px; }
+        .chat-msg-user { display: flex; justify-content: flex-end; }
+        .chat-msg-user .bubble {
+            background: #2d9e5f; color: white;
+            padding: 8px 12px; border-radius: 12px 12px 2px 12px;
+            font-size: 13px; max-width: 80%; line-height: 1.6;
+        }
+        .chat-msg-ai { display: flex; gap: 8px; align-items: flex-start; }
+        .ai-avatar {
+            width: 26px; height: 26px; border-radius: 50%;
+            background: linear-gradient(135deg, #2d9e5f, #1a6b3c);
+            color: white; font-size: 11px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .chat-msg-ai .bubble {
+            background: white; border: 1px solid #ebeef5;
+            padding: 8px 12px; border-radius: 12px 12px 12px 2px;
+            font-size: 13px; max-width: 80%; line-height: 1.7; white-space: pre-wrap;
+        }
+        .chat-loading { color: #909399; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+        .ai-dialog-input {
+            padding: 12px; border-top: 1px solid #ebeef5;
+            display: flex; gap: 8px; background: white;
+        }
     </style>
 </head>
 <body>
@@ -20,22 +124,29 @@
 <script src="/demo/js/axios-config.js"></script>
 <div id="app">
     <el-container style="height: 100vh;">
-        <el-header>
-            <span style="font-size: 20px;">农产品交易平台</span>
-            <span style="float: right;">
-                <el-button type="text" style="color: white;" @click="logout">退出登录</el-button>
-                <span style="margin-left: 10px;">欢迎，{{username}}</span>
-            </span>
+        <el-header height="60px">
+            <div class="header-left">
+                <span class="header-logo">🌾</span>
+                <span class="header-title">农产品交易平台</span>
+                <span class="header-badge">管理端</span>
+            </div>
+            <div class="header-right">
+                <span class="header-user">欢迎，<span>{{username}}</span></span>
+                <el-button type="text" style="color:rgba(255,255,255,0.85);font-size:13px;" @click="logout">
+                    <i class="el-icon-switch-button"></i> 退出登录
+                </el-button>
+            </div>
         </el-header>
         <el-container>
             <el-aside width="200px">
-                <el-menu
-                    default-active="1"
-                    class="el-menu-vertical"
-                    background-color="#545c64"
-                    text-color="#fff"
-                    active-text-color="#ffd04b"
+                <el-menu default-active="0" background-color="#2c3e50"
+                    text-color="rgba(255,255,255,0.75)" active-text-color="#ffffff"
                     @select="handleSelect">
+                    <el-menu-item index="0">
+                        <i class="el-icon-s-home"></i>
+                        <span slot="title">首页</span>
+                    </el-menu-item>
+                    <div class="sidebar-label">商品与订单</div>
                     <el-menu-item index="1">
                         <i class="el-icon-s-goods"></i>
                         <span slot="title">商品管理</span>
@@ -44,6 +155,7 @@
                         <i class="el-icon-s-order"></i>
                         <span slot="title">订单管理</span>
                     </el-menu-item>
+                    <div class="sidebar-label">用户管理</div>
                     <el-menu-item index="3">
                         <i class="el-icon-user"></i>
                         <span slot="title">用户管理</span>
@@ -52,6 +164,11 @@
                         <i class="el-icon-s-custom"></i>
                         <span slot="title">农户管理</span>
                     </el-menu-item>
+                    <el-menu-item index="7">
+                        <i class="el-icon-circle-check"></i>
+                        <span slot="title">农户认证</span>
+                    </el-menu-item>
+                    <div class="sidebar-label">数据与系统</div>
                     <el-menu-item index="5">
                         <i class="el-icon-s-data"></i>
                         <span slot="title">数据统计</span>
@@ -60,39 +177,105 @@
                         <i class="el-icon-setting"></i>
                         <span slot="title">系统设置</span>
                     </el-menu-item>
+                    <el-menu-item index="9">
+                        <i class="el-icon-cpu"></i>
+                        <span slot="title">AI助手</span>
+                    </el-menu-item>
                 </el-menu>
             </el-aside>
-            <el-main style="padding: 0;">
+            <el-main style="padding: 0; background: #f5f7fa;">
                 <iframe v-if="currentPage" :src="currentPage" class="content-iframe"></iframe>
-                <div v-else class="content-container">
-                    <div style="margin-top: 40px;">
-                        <h2>农户入驻</h2>
-                        <ul>
-                            <li>加入我们！</li>
-                            <li>添加管理员邮箱以获取资格认证</li>
-                            <li>认证通过后，即可在平台发布商品</li>
-                        </ul>
-                        <h2>农产品小知识</h2>
-                        <ul>
-                            <li>有机农产品是指在生产过程中不使用化学合成的农药、化肥、激素等物质，遵循自然规律和生态学原理生产的农产品。</li>
-                            <li>绿色食品是指产自优良生态环境、按照绿色食品标准生产、经专门机构认证的无污染、安全、优质的食品。</li>
-                            <li>农产品溯源可以帮助消费者了解产品的生产、加工、流通等全过程信息，保障食品安全。</li>
-                        </ul>
-                        <h3>推荐阅读</h3>
-                        <ul>
-                            <li><a href="https://baike.baidu.com/item/%E6%9C%89%E6%9C%BA%E9%A3%9F%E7%89%A9/2475138?fr=aladdin" target="_blank">什么是有机农产品？（百度百科）</a></li>
-                            <li><a href="https://www.moa.gov.cn/" target="_blank">中国农业农村部官网</a></li>
-                            <li><a href="https://www.foodmate.net/" target="_blank">食品伙伴网</a></li>
-                        </ul>
-                        <div style="margin-top:30px; color:#888; font-size:14px;">
-                            <p>本平台致力于为农户和消费者搭建安全、便捷、高效的农产品交易桥梁。</p>
-                            <p>如有建议或合作意向，请联系 <a href="mailto:3304739649@qq.com">3304739649@qq.com</a></p>
+                <div v-else class="welcome-page">
+                    <!-- 统计卡片 -->
+                    <div class="stat-cards">
+                        <div class="stat-card" style="border-left-color:#409EFF;">
+                            <div class="label">总用户数</div>
+                            <div class="value">{{overview.totalUsers || '-'}}</div>
+                        </div>
+                        <div class="stat-card" style="border-left-color:#2d9e5f;">
+                            <div class="label">农户数量</div>
+                            <div class="value">{{overview.totalFarmers || '-'}}</div>
+                        </div>
+                        <div class="stat-card" style="border-left-color:#E6A23C;">
+                            <div class="label">总订单数</div>
+                            <div class="value">{{overview.totalOrders || '-'}}</div>
+                        </div>
+                        <div class="stat-card" style="border-left-color:#F56C6C;">
+                            <div class="label">总销售额</div>
+                            <div class="value">¥{{overview.totalSales || '-'}}</div>
+                        </div>
+                    </div>
+                    <!-- 快捷入口 -->
+                    <div class="quick-actions">
+                        <div class="quick-card" @click="handleSelect('1')">
+                            <div class="icon">📦</div>
+                            <div class="label">商品管理</div>
+                        </div>
+                        <div class="quick-card" @click="handleSelect('2')">
+                            <div class="icon">📋</div>
+                            <div class="label">订单管理</div>
+                        </div>
+                        <div class="quick-card" @click="handleSelect('3')">
+                            <div class="icon">👥</div>
+                            <div class="label">用户管理</div>
+                        </div>
+                        <div class="quick-card" @click="handleSelect('4')">
+                            <div class="icon">🌾</div>
+                            <div class="label">农户管理</div>
+                        </div>
+                        <div class="quick-card" @click="handleSelect('5')">
+                            <div class="icon">📊</div>
+                            <div class="label">数据统计</div>
+                        </div>
+                        <div class="quick-card" @click="openAi">
+                            <div class="icon">🤖</div>
+                            <div class="label">AI助手</div>
                         </div>
                     </div>
                 </div>
             </el-main>
         </el-container>
     </el-container>
+
+    <!-- 悬浮AI助手 -->
+    <div class="ai-float-btn" @click="openAi" title="AI助手">🤖</div>
+    <div class="ai-dialog-mask" v-if="aiVisible" @click.self="aiVisible = false">
+        <div class="ai-dialog">
+            <div class="ai-dialog-header">
+                <div class="ai-dialog-header-left">
+                    <span>🤖</span>
+                    <span>AI智能助手</span>
+                    <el-tag size="mini" style="background:rgba(255,255,255,0.2);border:none;color:white;">DeepSeek</el-tag>
+                </div>
+                <span class="ai-dialog-close" @click="aiVisible = false">✕</span>
+            </div>
+            <div class="ai-chat-box" ref="chatBox">
+                <div class="ai-empty" v-if="chatHistory.length === 0">
+                    <div class="icon">💬</div>
+                    <div>有什么可以帮您？</div>
+                </div>
+                <div v-for="(msg, i) in chatHistory" :key="i" class="chat-msg">
+                    <div class="chat-msg-user" v-if="msg.role === 'user'">
+                        <div class="bubble">{{msg.content}}</div>
+                    </div>
+                    <div class="chat-msg-ai" v-else-if="msg.role === 'ai'">
+                        <div class="ai-avatar">AI</div>
+                        <div class="bubble">{{msg.content}}</div>
+                    </div>
+                    <div class="chat-msg-ai" v-else-if="msg.role === 'loading'">
+                        <div class="ai-avatar">AI</div>
+                        <div class="chat-loading"><i class="el-icon-loading"></i> 思考中...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-dialog-input">
+                <el-input v-model="aiInput" placeholder="输入问题..." size="small"
+                    :disabled="aiLoading" @keyup.enter.native="sendAiMessage" clearable>
+                </el-input>
+                <el-button type="primary" size="small" @click="sendAiMessage" :loading="aiLoading" style="flex-shrink:0;">发送</el-button>
+            </div>
+        </div>
+    </div>
 </div>
 <script>
 new Vue({
@@ -100,11 +283,17 @@ new Vue({
     data() {
         return {
             username: '',
-            currentPage: ''
+            currentPage: '',
+            overview: {},
+            aiVisible: false,
+            aiInput: '',
+            aiLoading: false,
+            chatHistory: []
         }
     },
     created() {
         this.fetchCurrentUser();
+        this.fetchOverview();
     },
     methods: {
         fetchCurrentUser() {
@@ -113,45 +302,60 @@ new Vue({
                     const user = res.data.body || {};
                     this.username = user.nickname || user.username || '管理员';
                 })
-                .catch(() => {
-                    window.location.href = '/demo/';
-                });
+                .catch(() => { window.location.href = '/demo/'; });
+        },
+        fetchOverview() {
+            $axios.get('/demo/api/statistics/overview')
+                .then(res => { this.overview = res.data || {}; })
+                .catch(() => {});
         },
         handleSelect(key) {
-            switch(key) {
-                case '1':
-                    this.currentPage = '/demo/toProductList';
-                    break;
-                case '2':
-                    this.currentPage = '/demo/toOrderList';
-                    break;
-                case '3':
-                    this.currentPage = '/demo/toUserList';
-                    break;
-                case '4':
-                    this.currentPage = '/demo/toFarmerList';
-                    break;
-                case '5':
-                    this.currentPage = '/demo/toStatistics';
-                    break;
-                case '6':
-                    this.currentPage = '/demo/toSettings';
-                    break;
-            }
+            if (key === '0') { this.currentPage = ''; return; }
+            const pages = {
+                '1': '/demo/toProductList',
+                '2': '/demo/toOrderList',
+                '3': '/demo/toUserList',
+                '4': '/demo/toFarmerList',
+                '5': '/demo/toStatistics',
+                '6': '/demo/toSettings',
+                '7': '/demo/toFarmerVerify',
+                '9': '/demo/toAiAssistant'
+            };
+            if (pages[key]) this.currentPage = pages[key];
         },
         logout() {
             $axios.post('/demo/api/user/logout')
-                .then(() => {
-                    localStorage.removeItem('jwt_token');
-                    window.location.href = '/demo/';
+                .then(() => { localStorage.removeItem('jwt_token'); window.location.href = '/demo/'; })
+                .catch(() => { localStorage.removeItem('jwt_token'); window.location.href = '/demo/'; });
+        },
+        openAi() { this.aiVisible = true; },
+        sendAiMessage() {
+            const msg = this.aiInput.trim();
+            if (!msg || this.aiLoading) return;
+            this.chatHistory.push({ role: 'user', content: msg });
+            this.chatHistory.push({ role: 'loading', content: '' });
+            this.aiInput = '';
+            this.aiLoading = true;
+            this.scrollChat();
+            $axios.post('/demo/api/ai/analyze', { message: msg, context: '' })
+                .then(res => {
+                    this.chatHistory = this.chatHistory.filter(m => m.role !== 'loading');
+                    this.chatHistory.push({ role: 'ai', content: res.data.reply });
                 })
                 .catch(() => {
-                    localStorage.removeItem('jwt_token');
-                    window.location.href = '/demo/';
-                });
+                    this.chatHistory = this.chatHistory.filter(m => m.role !== 'loading');
+                    this.chatHistory.push({ role: 'ai', content: 'AI服务暂时不可用，请稍后重试。' });
+                })
+                .finally(() => { this.aiLoading = false; this.scrollChat(); });
+        },
+        scrollChat() {
+            this.$nextTick(() => {
+                const box = this.$refs.chatBox;
+                if (box) box.scrollTop = box.scrollHeight;
+            });
         }
     }
 })
 </script>
 </body>
-</html> 
+</html>

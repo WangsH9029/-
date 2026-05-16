@@ -27,17 +27,28 @@ public class AiController {
     public Map<String, String> analyze(@RequestBody Map<String, Object> payload,
                                        HttpSession session) {
         Object role = session.getAttribute(SESSION_ROLE);
-        if (!"ROLE_ADMIN".equals(role)) {
-            throw new RuntimeException("无权限使用AI分析功能");
+        if (role == null) {
+            throw new RuntimeException("未登录");
         }
 
         String userMessage = (String) payload.get("message");
         String statsContext = (String) payload.getOrDefault("context", "");
 
-        // 构建系统提示词
-        String systemPrompt = "你是一个农产品电商平台的数据分析助手。" +
-            "请根据提供的平台运营数据，给出简洁、实用的经营分析和建议。" +
-            "回答请控制在200字以内，使用中文，语言简洁专业。";
+        // 根据角色定制系统提示词
+        String systemPrompt;
+        if ("ROLE_ADMIN".equals(role)) {
+            systemPrompt = "你是一个农产品电商平台的数据分析助手，服务对象是平台管理员。" +
+                "请根据提供的平台运营数据，给出简洁、实用的经营分析和建议。" +
+                "回答请控制在300字以内，使用中文，语言简洁专业。";
+        } else if ("ROLE_FARMER".equals(role)) {
+            systemPrompt = "你是一个农产品电商平台的农业助手，服务对象是平台上的农户。" +
+                "请帮助农户解答农产品种植、销售、定价、商品管理等方面的问题。" +
+                "回答请控制在300字以内，使用中文，语言通俗易懂，贴近农户实际需求。";
+        } else {
+            systemPrompt = "你是一个农产品电商平台的购物助手，服务对象是普通消费者。" +
+                "请帮助用户解答农产品选购、营养价值、烹饪方法、订单问题等方面的疑问。" +
+                "回答请控制在300字以内，使用中文，语言友好亲切。";
+        }
 
         // 构建完整的用户消息（数据上下文 + 用户问题）
         String fullMessage = statsContext.isEmpty()

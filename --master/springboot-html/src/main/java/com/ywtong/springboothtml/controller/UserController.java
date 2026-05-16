@@ -31,6 +31,18 @@ public class UserController {
         return userService.findAll();
     }
 
+    @GetMapping("/farmers")
+    public List<User> getFarmers(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String isVerified,
+            HttpSession session) {
+        requireAdmin(session);
+        Boolean verifiedFilter = null;
+        if ("1".equals(isVerified)) verifiedFilter = true;
+        else if ("0".equals(isVerified)) verifiedFilter = false;
+        return userService.findFarmersByFilter(keyword, verifiedFilter);
+    }
+
     @GetMapping("/current")
     public Resp<LoginUserInfo> getCurrentUser(HttpSession session) {
         User user = getCurrentUserEntity(session);

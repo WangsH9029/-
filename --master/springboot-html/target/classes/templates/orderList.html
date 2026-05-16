@@ -115,7 +115,7 @@
                     </div>
                 </div>
             </div>
-            <el-table :data="orders" style="width:100%" v-loading="loading" @selection-change="handleSelectionChange">
+            <el-table :data="orders"style="width:100%" v-loading="loading" @selection-change="handleSelectionChange">
                 <!-- 复选框列 -->
                 <el-table-column type="selection" width="50" :selectable="checkSelectable"></el-table-column>
                 <el-table-column prop="orderNo" label="订单编号" width="180"></el-table-column>
@@ -129,7 +129,7 @@
                         ¥{{ scope.row.totalAmount }}
                     </template>
                 </el-table-column>
-                <el-table-column label="订单状态" width="110">
+                <el-table-column label="订单状态" width="200">
                     <template slot-scope="scope">
                         <!-- 用户端显示进度条 -->
                         <div v-if="!isAdmin && !isFarmer">
@@ -151,9 +151,11 @@
                         {{ formatTime(scope.row.createTime) }}
                     </template>
                 </el-table-column>
-                <el-table-column label="操作" width="280" fixed="right">
+                <el-table-column label="操作" width="220" fixed="right">
                     <template slot-scope="scope">
                         <el-button v-if="isAdmin" type="text" size="small" @click="handleDelete(scope.row)" style="color:red">删除</el-button>
+                        <el-button v-if="isAdmin && scope.row.status !== 'CANCELLED' && scope.row.status !== 'COMPLETED'" type="text" size="small" style="color:#E6A23C" @click="adminUpdateStatus(scope.row, 'CANCELLED')">强制取消</el-button>
+                        <el-button v-if="isAdmin && scope.row.status !== 'COMPLETED' && scope.row.status !== 'CANCELLED'" type="text" size="small" style="color:#67C23A" @click="adminUpdateStatus(scope.row, 'COMPLETED')">标记完成</el-button>
                         <el-button v-if="!isAdmin && !isFarmer && scope.row.status === 'PENDING_PAYMENT'" type="text" size="small" @click="openEditDialog(scope.row)">修改</el-button>
                         <el-button v-if="!isAdmin && !isFarmer && scope.row.status === 'PENDING_PAYMENT'" type="text" size="small" @click="openPayDialog(scope.row)">支付</el-button>
                         <el-button v-if="!isAdmin && !isFarmer && scope.row.status === 'PENDING_PAYMENT'" type="text" size="small" @click="handleCancel(scope.row)">取消</el-button>
@@ -360,6 +362,23 @@
                             .catch(() => this.$message.error(actionText + '失败'));
                     })
                     .catch(() => {});
+            },
+            adminUpdateStatus(row, status) {
+                const actionMap = { 'CANCELLED': '强制取消', 'COMPLETED': '标记完成' };
+                const typeMap = { 'CANCELLED': 'warning', 'COMPLETED': 'success' };
+                const action = actionMap[status];
+                this.$confirm('确定要将订单 ' + row.orderNo + ' ' + action + '吗？此操作不可撤销。', action, {
+                    type: typeMap[status],
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消'
+                }).then(() => {
+                    $axios.put('/demo/api/order/' + row.id + '/status', null, { params: { status } })
+                        .then(() => {
+                            this.$message.success(action + '成功');
+                            this.fetchOrders();
+                        })
+                        .catch(() => this.$message.error(action + '失败'));
+                }).catch(() => {});
             },
             handleDetail(row) {
                 this.detailOrder = row;

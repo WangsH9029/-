@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>农户认证管理</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>
+        body { margin: 0; padding: 0; background: #f5f7fa; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .container { margin: 20px; }
+        .stat-bar { display: flex; gap: 16px; margin-bottom: 20px; }
+        .stat-item {
+            background: white; border-radius: 10px; padding: 16px 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex: 1;
+            border-left: 4px solid #409EFF;
+        }
+        .stat-item.verified { border-left-color: #67C23A; }
+        .stat-item.unverified { border-left-color: #E6A23C; }
+        .stat-item .label { font-size: 13px; color: #909399; margin-bottom: 6px; }
+        .stat-item .value { font-size: 26px; font-weight: bold; color: #303133; }
+    </style>
+</head>
+<body>
+<script src="//unpkg.com/vue@2/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="/demo/js/axios-config.js"></script>
+<div id="app">
+    <div class="container">
+        <!-- 统计栏 -->
+        <div class="stat-bar">
+            <div class="stat-item">
+                <div class="label">农户总数</div>
+                <div class="value">{{total}}</div>
+            </div>
+            <div class="stat-item verified">
+                <div class="label">已认证</div>
+                <div class="value">{{verifiedCount}}</div>
+            </div>
+            <div class="stat-item unverified">
+                <div class="label">待认证</div>
+                <div class="value">{{unverifiedCount}}</div>
+            </div>
+        </div>
+
+        <el-card>
+            <div slot="header" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>农户认证管理</span>
+                <div style="display:flex;gap:12px;align-items:center;">
+                    <el-select v-model="filterStatus" placeholder="认证状态" clearable style="width:130px;" @change="fetchFarmers">
+                        <el-option label="全部" value=""></el-option>
+                        <el-option label="已认证" value="1"></el-option>
+                        <el-option label="未认证" value="0"></el-option>
+                    </el-select>
+                    <el-input v-model="keyword" placeholder="搜索农户名称" clearable style="width:200px;"
+                        @input="debouncedSearch" prefix-icon="el-icon-search"></el-input>
+                </div>
+            </div>
+
+            <el-table :data="farmers" style="width:100%" v-loading="loading">
+                <el-table-column prop="username" label="用户名" width="130"></el-table-column>
+                <el-table-column prop="nickname" label="昵称" width="130"></el-table-column>
+                <el-table-column prop="phone" label="联系电话" width="140"></el-table-column>
+                <el-table-column prop="email" label="邮箱"></el-table-column>
+                <el-table-column prop="address" label="地址"></el-table-column>
+                <el-table-column label="认证状态" width="110">
+                    <template slot-scope="scope">
+                        <el-tag :type="scope.row.isVerified ? 'success' : 'warning'" size="small">
+                            <i :class="scope.row.isVerified ? 'el-icon-circle-check' : 'el-icon-time'"></i>
+                            {{scope.row.isVerified ? '已认证' : '待认证'}}
+                        </el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" width="160" fixed="right">
+                    <template slot-scope="scope">
+                        <el-button v-if="!scope.row.isVerified" type="success" size="mini"
+                            @click="verify(scope.row, true)">
+                            <i class="el-icon-circle-check"></i> 通过认证
+                        </el-button>
+                        <el-button v-else type="warning" size="mini"
+                            @click="verify(scope.row, false)">
+                            <i class="el-icon-remove-outline"></i> 取消认证
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <div style="margin-top:16px;text-align:right;">
+                <el-pagination
+                    background
+                    layout="prev, pager, next, total"
+                    :current-page="page + 1"
+                    :page-size="size"
+                    :total="total"
+                    @current-change="handlePageChange">
+                </el-pagination>
+            </div>
+        </el-card>
+    </div>
+</div>
+<script>
+new Vue({
+    el: '#app',
+    data() {
+        return {
+            farmers: [],
+            loading: false,
+            keyword: '',
+            filterStatus: '',
+            page: 0,
+            size: 10,
+            total: 0
+        }
+    },
+    computed: {
+        verifiedCount() {
+            return this.farmers.filter(f => f.isVerified).length;
+        },
+        unverifiedCount() {
+            return this.farmers.filter(f => !f.isVerified).length;
+        }
+    },
+    created() {
+        this.debouncedSearch = (function(fn, delay) {
+            let timer = null;
+            return function() { clearTimeout(timer); timer = setTimeout(fn, delay); };
+        })(this.fetchFarmers.bind(this), 400);
+        this.fetchFarmers();
+    },
+    methods: {
+        fetchFarmers() {
+            this.loading = true;
+            const params = {};
+            if (this.keyword) params.keyword = this.keyword;
+            if (this.filterStatus !== '') params.isVerified = this.filterStatus;
+
+            $axios.get('/demo/api/user/farmers', { params })
+                .then(res => {
+                    this.farmers = res.data || [];
+                    this.total = this.farmers.length;
+                })
+                .catch(() => { this.$message.error('获取农户列表失败'); })
+                .finally(() => { this.loading = false; });
+        },
+        verify(farmer, status) {
+            const action = status ? '通过认证' : '取消认证';
+            this.$confirm('确定要' + action + '农户"' + (farmer.nickname || farmer.username) + '"吗？', '认证操作', {
+                type: status ? 'success' : 'warning',
+                confirmButtonText: '确定',
+                cancelButtonText: '取消'
+            }).then(() => {
+                $axios.put('/demo/api/user/' + farmer.id, {
+                    ...farmer,
+                    isVerified: status
+                }).then(() => {
+                    this.$message.success(action + '成功');
+                    this.fetchFarmers();
+                }).catch(() => {
+                    this.$message.error(action + '失败');
+                });
+            }).catch(() => {});
+        },
+        handlePageChange(page) {
+            this.page = page - 1;
+            this.fetchFarmers();
+        }
+    }
+});
+</script>
+</body>
+</html>

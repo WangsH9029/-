@@ -155,6 +155,21 @@ public class IndexController {
         return requireRole(session, "ROLE_ADMIN", "statistics");
     }
 
+    @GetMapping("/toProductDetail")
+    public String toProductDetail(HttpSession session) {
+        return requireLogin(session, "productDetail");
+    }
+
+    @GetMapping("/toFarmerVerify")
+    public String toFarmerVerify(HttpSession session) {
+        return requireRole(session, "ROLE_ADMIN", "farmerVerify");
+    }
+
+    @GetMapping("/toAiAssistant")
+    public String toAiAssistant(HttpSession session) {
+        return requireLogin(session, "aiAssistant");
+    }
+
     // 系统设置
     @GetMapping("/toSettings")
     public String toSettings(HttpSession session) {

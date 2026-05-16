@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>商品详情</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>
+        body { margin: 0; padding: 0; background: #f5f7fa; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .container { max-width: 960px; margin: 0 auto; padding: 24px; }
+        .back-btn { margin-bottom: 16px; }
+        .product-card {
+            background: white; border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            overflow: hidden; margin-bottom: 20px;
+        }
+        .product-main { display: flex; gap: 32px; padding: 28px; }
+        .product-image-wrap {
+            width: 340px; flex-shrink: 0;
+            border-radius: 10px; overflow: hidden;
+            background: #f5f7fa;
+        }
+        .product-image-wrap img {
+            width: 100%; height: 300px; object-fit: cover; display: block;
+        }
+        .product-image-placeholder {
+            width: 100%; height: 300px;
+            display: flex; align-items: center; justify-content: center;
+            color: #c0c4cc; font-size: 48px;
+        }
+        .product-info { flex: 1; }
+        .product-name { font-size: 22px; font-weight: 600; color: #1a1a1a; margin: 0 0 12px 0; }
+        .product-price { font-size: 32px; font-weight: bold; color: #f56c6c; margin: 0 0 20px 0; }
+        .product-price span { font-size: 16px; }
+        .product-meta { margin-bottom: 20px; }
+        .meta-row {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 14px; color: #606266; margin-bottom: 10px;
+        }
+        .meta-label { color: #909399; width: 60px; flex-shrink: 0; }
+        .product-desc {
+            background: #f8fafb; border-radius: 8px; padding: 16px;
+            font-size: 14px; color: #606266; line-height: 1.8;
+            margin-bottom: 24px;
+        }
+        .product-actions { display: flex; align-items: center; gap: 16px; }
+        .farmer-card {
+            background: white; border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 20px 28px;
+        }
+        .farmer-card h3 { margin: 0 0 16px 0; font-size: 15px; color: #1a6b3c; }
+        .farmer-info { display: flex; align-items: center; gap: 16px; }
+        .farmer-avatar {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: linear-gradient(135deg, #2d9e5f, #1a6b3c);
+            color: white; font-size: 20px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .farmer-detail .name { font-size: 16px; font-weight: 600; color: #303133; }
+        .farmer-detail .phone { font-size: 13px; color: #909399; margin-top: 4px; }
+    </style>
+</head>
+<body>
+<script src="//unpkg.com/vue@2/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="/demo/js/axios-config.js"></script>
+<div id="app">
+    <div class="container" v-loading="loading">
+        <!-- 返回按钮 -->
+        <div class="back-btn">
+            <el-button size="small" icon="el-icon-arrow-left" @click="goBack">返回商城</el-button>
+        </div>
+
+        <div v-if="product.id">
+            <!-- 商品主信息 -->
+            <div class="product-card">
+                <div class="product-main">
+                    <!-- 图片 -->
+                    <div class="product-image-wrap">
+                        <img v-if="firstImage" :src="firstImage" :alt="product.name">
+                        <div v-else class="product-image-placeholder">🌾</div>
+                    </div>
+                    <!-- 信息 -->
+                    <div class="product-info">
+                        <h1 class="product-name">{{product.name}}</h1>
+                        <div class="product-price">
+                            <span>¥</span>{{product.price}}
+                            <span style="font-size:14px;color:#909399;font-weight:normal;margin-left:8px;">/ {{product.unit || '件'}}</span>
+                        </div>
+                        <div class="product-meta">
+                            <div class="meta-row">
+                                <span class="meta-label">分类</span>
+                                <el-tag size="small" type="success">{{product.category || '未分类'}}</el-tag>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">库存</span>
+                                <span :style="product.stock > 0 ? 'color:#67C23A' : 'color:#F56C6C'">
+                                    {{product.stock > 0 ? product.stock + ' ' + (product.unit || '件') : '已售罄'}}
+                                </span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">销量</span>
+                                <span>{{product.salesCount || 0}} 件</span>
+                            </div>
+                        </div>
+                        <div class="product-desc">
+                            {{product.description || '暂无商品描述'}}
+                        </div>
+                        <div class="product-actions">
+                            <el-input-number v-model="quantity" :min="1" :max="product.stock || 1" size="medium"></el-input-number>
+                            <el-button type="primary" size="medium" icon="el-icon-shopping-cart-2"
+                                @click="addToCart" :disabled="product.stock <= 0">加入购物车</el-button>
+                            <el-button type="success" size="medium" icon="el-icon-s-promotion"
+                                @click="buyNow" :disabled="product.stock <= 0">立即购买</el-button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 农户信息 -->
+            <div class="farmer-card" v-if="product.farmer">
+                <h3>🌱 农户信息</h3>
+                <div class="farmer-info">
+                    <div class="farmer-avatar">🧑‍🌾</div>
+                    <div class="farmer-detail">
+                        <div class="name">
+                            {{product.farmer.nickname || product.farmer.username}}
+                            <el-tag v-if="product.farmer.isVerified" size="mini" type="success" style="margin-left:8px;">
+                                <i class="el-icon-circle-check"></i> 已认证
+                            </el-tag>
+                            <el-tag v-else size="mini" type="info" style="margin-left:8px;">
+                                <i class="el-icon-time"></i> 未认证
+                            </el-tag>
+                        </div>
+                        <div class="phone" v-if="product.farmer.phone">联系方式：{{product.farmer.phone}}</div>
+                        <div class="phone" v-if="product.farmer.address">所在地区：{{product.farmer.address}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-else-if="!loading" style="text-align:center;padding:80px 0;color:#909399;">
+            <i class="el-icon-warning-outline" style="font-size:48px;"></i>
+            <div style="margin-top:12px;">商品不存在或已下架</div>
+        </div>
+    </div>
+</div>
+<script>
+new Vue({
+    el: '#app',
+    data() {
+        return {
+            product: {},
+            quantity: 1,
+            loading: true
+        }
+    },
+    computed: {
+        firstImage() {
+            if (!this.product.images) return null;
+            const imgs = this.product.images.split(',').map(s => s.trim()).filter(Boolean);
+            return imgs.length > 0 ? imgs[0] : null;
+        }
+    },
+    created() {
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+        if (id) {
+            this.fetchProduct(id);
+        } else {
+            this.loading = false;
+        }
+    },
+    methods: {
+        fetchProduct(id) {
+            $axios.get('/demo/api/product/' + id)
+                .then(res => { this.product = res.data || {}; })
+                .catch(() => { this.$message.error('获取商品信息失败'); })
+                .finally(() => { this.loading = false; });
+        },
+        goBack() {
+            window.history.back();
+        },
+        addToCart() {
+            // 通知父页面加入购物车
+            window.parent.postMessage({
+                type: 'addToCart',
+                product: this.product,
+                quantity: this.quantity
+            }, '*');
+            this.$message.success('已加入购物车');
+        },
+        buyNow() {
+            // 通知父页面立即购买
+            window.parent.postMessage({
+                type: 'buyNow',
+                product: this.product,
+                quantity: this.quantity
+            }, '*');
+        }
+    }
+});
+</script>
+</body>
+</html>

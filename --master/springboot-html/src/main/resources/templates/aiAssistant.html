@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>AI智能助手</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; background: #f5f7fa; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+
+        .ai-header {
+            background: linear-gradient(135deg, #1a6b3c, #2d9e5f);
+            color: white; padding: 16px 24px;
+            display: flex; align-items: center; gap: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        .ai-header .icon { font-size: 28px; }
+        .ai-header .title { font-size: 18px; font-weight: 600; }
+        .ai-header .subtitle { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+        .ai-header .badge {
+            margin-left: auto;
+            background: rgba(255,255,255,0.2);
+            padding: 3px 10px; border-radius: 12px; font-size: 12px;
+        }
+
+        /* 快捷问题区 */
+        .quick-area {
+            padding: 16px 24px 0;
+            flex-shrink: 0;
+        }
+        .quick-label { font-size: 12px; color: #909399; margin-bottom: 8px; }
+        .quick-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+        .quick-btn {
+            background: white; border: 1px solid #dcdfe6; border-radius: 16px;
+            padding: 5px 14px; font-size: 12px; color: #606266;
+            cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        }
+        .quick-btn:hover { border-color: #2d9e5f; color: #2d9e5f; background: #f0faf4; }
+
+        /* 对话区 */
+        .chat-area {
+            flex: 1; overflow-y: auto; padding: 20px 24px;
+            display: flex; flex-direction: column; gap: 16px;
+        }
+        .chat-empty {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: #c0c4cc; text-align: center;
+        }
+        .chat-empty .icon { font-size: 56px; margin-bottom: 12px; }
+        .chat-empty .text { font-size: 15px; margin-bottom: 6px; }
+        .chat-empty .hint { font-size: 13px; }
+
+        .msg-row { display: flex; gap: 10px; align-items: flex-start; }
+        .msg-row.user { flex-direction: row-reverse; }
+        .avatar {
+            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: bold;
+        }
+        .avatar.ai { background: linear-gradient(135deg, #2d9e5f, #1a6b3c); color: white; }
+        .avatar.user { background: #409EFF; color: white; font-size: 12px; }
+        .bubble {
+            max-width: 72%; padding: 10px 14px; border-radius: 12px;
+            font-size: 14px; line-height: 1.7; word-break: break-word;
+        }
+        .bubble.ai {
+            background: white; border: 1px solid #ebeef5;
+            border-radius: 4px 12px 12px 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            white-space: pre-wrap;
+        }
+        .bubble.user {
+            background: #2d9e5f; color: white;
+            border-radius: 12px 4px 12px 12px;
+        }
+        .bubble.loading { color: #909399; display: flex; align-items: center; gap: 8px; }
+        .msg-time { font-size: 11px; color: #c0c4cc; margin-top: 4px; text-align: right; }
+
+        /* 输入区 */
+        .input-area {
+            padding: 16px 24px;
+            background: white;
+            border-top: 1px solid #ebeef5;
+            flex-shrink: 0;
+        }
+        .input-row { display: flex; gap: 10px; align-items: flex-end; }
+        .input-row .el-textarea { flex: 1; }
+        .input-row .el-textarea textarea {
+            border-radius: 8px; resize: none; font-size: 14px;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        .send-btn { flex-shrink: 0; height: 40px; border-radius: 8px; }
+        .input-hint { font-size: 12px; color: #c0c4cc; margin-top: 6px; }
+    </style>
+</head>
+<body>
+<script src="//unpkg.com/vue@2/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="/demo/js/axios-config.js"></script>
+<div id="app" style="height:100vh;display:flex;flex-direction:column;">
+    <!-- 头部 -->
+    <div class="ai-header">
+        <div class="icon">🤖</div>
+        <div>
+            <div class="title">AI智能助手</div>
+            <div class="subtitle">{{roleLabel}}专属助手，随时为您解答</div>
+        </div>
+        <div class="badge">DeepSeek</div>
+    </div>
+
+    <!-- 快捷问题 -->
+    <div class="quick-area">
+        <div class="quick-label">快捷提问</div>
+        <div class="quick-btns">
+            <div class="quick-btn" v-for="q in quickQuestions" :key="q" @click="askQuick(q)">{{q}}</div>
+        </div>
+    </div>
+
+    <!-- 对话区 -->
+    <div class="chat-area" ref="chatArea">
+        <div class="chat-empty" v-if="messages.length === 0">
+            <div class="icon">💬</div>
+            <div class="text">有什么可以帮您？</div>
+            <div class="hint">点击上方快捷问题或直接输入</div>
+        </div>
+        <div v-for="(msg, i) in messages" :key="i" :class="['msg-row', msg.role]">
+            <div :class="['avatar', msg.role]">{{msg.role === 'ai' ? 'AI' : '我'}}</div>
+            <div>
+                <div :class="['bubble', msg.role]">
+                    <template v-if="msg.role === 'loading'">
+                        <i class="el-icon-loading"></i> 正在思考...
+                    </template>
+                    <template v-else>{{msg.content}}</template>
+                </div>
+                <div class="msg-time" v-if="msg.role !== 'loading'">{{msg.time}}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 输入区 -->
+    <div class="input-area">
+        <div class="input-row">
+            <el-input
+                type="textarea"
+                v-model="input"
+                :rows="2"
+                placeholder="输入您的问题，按 Ctrl+Enter 发送..."
+                :disabled="loading"
+                @keydown.ctrl.enter.native="send">
+            </el-input>
+            <el-button type="primary" class="send-btn" @click="send" :loading="loading">发送</el-button>
+        </div>
+        <div class="input-hint">Ctrl+Enter 快速发送</div>
+    </div>
+</div>
+
+<script>
+new Vue({
+    el: '#app',
+    data() {
+        return {
+            input: '',
+            messages: [],
+            loading: false,
+            role: '',
+            roleLabel: '通用',
+            quickQuestions: []
+        }
+    },
+    created() {
+        $axios.get('/demo/api/user/current')
+            .then(res => {
+                const user = res.data.body || {};
+                this.role = user.role || '';
+                if (this.role === 'ROLE_ADMIN') {
+                    this.roleLabel = '管理员';
+                    this.quickQuestions = [
+                        '分析当前平台销售情况',
+                        '如何提升平台用户活跃度？',
+                        '热销农产品有哪些运营建议？',
+                        '如何优化农户管理流程？',
+                        '平台数据异常如何排查？'
+                    ];
+                } else if (this.role === 'ROLE_FARMER') {
+                    this.roleLabel = '农户';
+                    this.quickQuestions = [
+                        '如何提高商品销量？',
+                        '农产品如何合理定价？',
+                        '商品图片拍摄有什么技巧？',
+                        '如何写好商品描述？',
+                        '订单处理有什么注意事项？'
+                    ];
+                } else {
+                    this.roleLabel = '用户';
+                    this.quickQuestions = [
+                        '如何挑选新鲜蔬菜？',
+                        '有机农产品和普通农产品有什么区别？',
+                        '应季蔬菜有哪些推荐？',
+                        '如何取消或修改订单？',
+                        '农产品保存有什么技巧？'
+                    ];
+                }
+            })
+            .catch(() => {});
+    },
+    methods: {
+        now() {
+            const d = new Date();
+            const h = String(d.getHours()).padStart(2, '0');
+            const m = String(d.getMinutes()).padStart(2, '0');
+            return h + ':' + m;
+        },
+        askQuick(q) {
+            this.input = q;
+            this.send();
+        },
+        send() {
+            const msg = this.input.trim();
+            if (!msg || this.loading) return;
+            this.messages.push({ role: 'user', content: msg, time: this.now() });
+            this.messages.push({ role: 'loading', content: '' });
+            this.input = '';
+            this.loading = true;
+            this.scrollBottom();
+
+            $axios.post('/demo/api/ai/analyze', { message: msg, context: '' })
+                .then(res => {
+                    this.messages = this.messages.filter(m => m.role !== 'loading');
+                    this.messages.push({ role: 'ai', content: res.data.reply, time: this.now() });
+                })
+                .catch(() => {
+                    this.messages = this.messages.filter(m => m.role !== 'loading');
+                    this.messages.push({ role: 'ai', content: 'AI服务暂时不可用，请稍后重试。', time: this.now() });
+                })
+                .finally(() => {
+                    this.loading = false;
+                    this.scrollBottom();
+                });
+        },
+        scrollBottom() {
+            this.$nextTick(() => {
+                const el = this.$refs.chatArea;
+                if (el) el.scrollTop = el.scrollHeight;
+            });
+        }
+    }
+});
+</script>
+</body>
+</html>

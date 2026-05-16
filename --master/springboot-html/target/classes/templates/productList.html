@@ -5,10 +5,10 @@
     <title>商品列表</title>
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <style>
-        body{margin:0;padding:0;}
-        .content-container{margin:20px;padding:20px;}
-        .product-image{transition:opacity 0.3s;}
-        .product-image:not(.loaded){opacity:0.6;}
+        body { margin: 0; padding: 0; }
+        .content-container { margin: 20px; padding: 20px; }
+        .product-image { transition: opacity 0.3s; }
+        .product-image:not(.loaded) { opacity: 0.6; }
     </style>
 </head>
 <body>
@@ -20,23 +20,26 @@
     <div class="content-container">
         <el-card>
             <div slot="header">
-                <span>{{ pageTitle }}</span>
-                <el-button v-if="canManageProducts" type="primary" size="small" style="float:right" @click="goAdd">添加商品</el-button>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>{{ pageTitle }}</span>
+                    <el-button v-if="canManageProducts" type="primary" size="small" @click="goAdd">添加商品</el-button>
+                </div>
             </div>
             <el-table :data="products" style="width:100%">
-                <el-table-column label="图片" width="100">
+                <el-table-column label="图片" width="80">
                     <template slot-scope="scope">
-                        <img v-if="getFirstImage(scope.row)" v-lazy="getFirstImage(scope.row)" class="product-image" style="width:60px;height:60px;object-fit:cover;border-radius:4px;" :alt="scope.row.name">
+                        <img v-if="getFirstImage(scope.row)" v-lazy="getFirstImage(scope.row)" class="product-image" style="width:50px;height:50px;object-fit:cover;border-radius:4px;" :alt="scope.row.name">
                         <span v-else style="color:#999;font-size:12px;">无图片</span>
                     </template>
                 </el-table-column>
-                <el-table-column prop="name" label="商品名称" width="180"></el-table-column>
-                <el-table-column prop="category" label="分类" width="120"></el-table-column>
-                <el-table-column prop="price" label="价格" width="120"></el-table-column>
-                <el-table-column prop="stock" label="库存" width="120"></el-table-column>
-                <el-table-column prop="unit" label="单位" width="80"></el-table-column>
-                <el-table-column v-if="isAdmin" :formatter="farmerName" label="农户" width="120"></el-table-column>
-                <el-table-column v-if="canManageProducts" label="操作" width="150">
+                <el-table-column prop="name" label="商品名称" min-width="150"></el-table-column>
+                <el-table-column prop="category" label="分类" width="100"></el-table-column>
+                <el-table-column prop="price" label="价格" width="100"></el-table-column>
+                <el-table-column prop="stock" label="库存" width="80"></el-table-column>
+                <el-table-column prop="unit" label="单位" width="70"></el-table-column>
+                <el-table-column v-if="isAdmin" :formatter="farmerName" label="农户" width="100"></el-table-column>
+                <!-- 关键修改2：操作列靠右对齐，宽度调整 -->
+                <el-table-column v-if="canManageProducts" label="操作" width="150" align="right">
                     <template slot-scope="scope">
                         <el-button type="text" size="small" @click="openEditDialog(scope.row)">编辑</el-button>
                         <el-button type="text" size="small" style="color:red" @click="deleteProduct(scope.row)">删除</el-button>
@@ -44,8 +47,9 @@
                 </el-table-column>
             </el-table>
         </el-card>
+
         <!-- 编辑商品弹窗 -->
-        <el-dialog title="编辑商品" :visible.sync="editDialogVisible">
+        <el-dialog title="编辑商品" :visible.sync="editDialogVisible" width="600px">
             <el-form :model="editForm" label-width="100px">
                 <el-form-item label="商品名称"><el-input v-model="editForm.name"></el-input></el-form-item>
                 <el-form-item label="分类"><el-input v-model="editForm.category"></el-input></el-form-item>
@@ -57,12 +61,12 @@
                 </el-form-item>
                 <el-form-item label="商品图片">
                     <el-upload
-                        action="/demo/api/upload/image"
-                        list-type="picture-card"
-                        :on-success="handleUploadSuccess"
-                        :on-remove="handleRemove"
-                        :file-list="editFileList"
-                        accept="image/*">
+                            action="/demo/api/upload/image"
+                            list-type="picture-card"
+                            :on-success="handleUploadSuccess"
+                            :on-remove="handleRemove"
+                            :file-list="editFileList"
+                            accept="image/*">
                         <i class="el-icon-plus"></i>
                     </el-upload>
                     <div style="color: #909399; font-size: 12px; margin-top: 5px;">或手动输入图片URL（多个用逗号分隔）</div>
@@ -82,134 +86,132 @@
     </div>
 </div>
 <script>
-new Vue({
-    el:'#app',
-    directives: {
-        lazy: window.$lazyLoadDirective
-    },
-    data(){
-        return {
-            products:[],
-            farmers:[],
-            editDialogVisible: false,
-            isAdmin: false,
-            isFarmer: false,
-            canManageProducts: false,
-            pageTitle: '商品列表',
-            editForm: {id:'', name:'', category:'', price:'', stock:'', unit:'', description:'', images:'', farmerId:''},
-            editFileList: []
-        }
-    },
-    created() {
-        $axios.get('/demo/api/user/current')
-            .then(res => {
-                const user = res.data.body || {};
-                this.isAdmin = user.role === 'ROLE_ADMIN';
-                this.isFarmer = user.role === 'ROLE_FARMER';
-                this.canManageProducts = this.isAdmin || this.isFarmer;
-                this.pageTitle = this.isFarmer ? '我的商品' : '商品列表';
-                this.fetchProducts();
-                if (this.isAdmin) {
-                    this.fetchFarmers();
+    new Vue({
+        el:'#app',
+        directives: {
+            lazy: window.$lazyLoadDirective
+        },
+        data(){
+            return {
+                products:[],
+                farmers:[],
+                editDialogVisible: false,
+                isAdmin: false,
+                isFarmer: false,
+                canManageProducts: false,
+                pageTitle: '商品列表',
+                editForm: {id:'', name:'', category:'', price:'', stock:'', unit:'', description:'', images:'', farmerId:''},
+                editFileList: []
+            }
+        },
+        created() {
+            $axios.get('/demo/api/user/current')
+                .then(res => {
+                    const user = res.data.body || {};
+                    this.isAdmin = user.role === 'ROLE_ADMIN';
+                    this.isFarmer = user.role === 'ROLE_FARMER';
+                    this.canManageProducts = this.isAdmin || this.isFarmer;
+                    this.pageTitle = this.isFarmer ? '我的商品' : '商品列表';
+                    this.fetchProducts();
+                    if (this.isAdmin) {
+                        this.fetchFarmers();
+                    }
+                })
+                .catch(() => {
+                    window.location.href = '/demo/';
+                });
+        },
+        methods:{
+            goAdd(){window.location.href='toAddProduct';},
+            farmerName(row) {
+                return row.farmer && row.farmer.nickname ? row.farmer.nickname : '';
+            },
+            openEditDialog(row) {
+                this.editForm = {
+                    id: row.id,
+                    name: row.name,
+                    category: row.category,
+                    price: row.price,
+                    stock: row.stock,
+                    unit: row.unit,
+                    description: row.description || '',
+                    images: row.images || '',
+                    farmerId: row.farmer && row.farmer.id ? row.farmer.id : ''
+                };
+                this.editFileList = row.images ? row.images.split(',').map((url, index) => ({
+                    name: 'image_' + index,
+                    url: url.trim()
+                })) : [];
+                this.editDialogVisible = true;
+            },
+            handleUploadSuccess(response, file, fileList) {
+                if (response.code === '200') {
+                    const uploadedUrls = fileList.map(f => f.response?.body || f.url).filter(Boolean);
+                    this.editForm.images = uploadedUrls.join(',');
+                } else {
+                    this.$message.error(response.msg || '上传失败');
                 }
-            })
-            .catch(() => {
-                window.location.href = '/demo/';
-            });
-    },
-    methods:{
-        goAdd(){window.location.href='toAddProduct';},
-        farmerName(row) {
-            return row.farmer && row.farmer.nickname ? row.farmer.nickname : '';
-        },
-        openEditDialog(row) {
-            this.editForm = {
-                id: row.id,
-                name: row.name,
-                category: row.category,
-                price: row.price,
-                stock: row.stock,
-                unit: row.unit,
-                description: row.description || '',
-                images: row.images || '',
-                farmerId: row.farmer && row.farmer.id ? row.farmer.id : ''
-            };
-            // 初始化已有图片列表
-            this.editFileList = row.images ? row.images.split(',').map((url, index) => ({
-                name: 'image_' + index,
-                url: url.trim()
-            })) : [];
-            this.editDialogVisible = true;
-        },
-        handleUploadSuccess(response, file, fileList) {
-            if (response.code === '200') {
+            },
+            handleRemove(file, fileList) {
                 const uploadedUrls = fileList.map(f => f.response?.body || f.url).filter(Boolean);
                 this.editForm.images = uploadedUrls.join(',');
-            } else {
-                this.$message.error(response.msg || '上传失败');
-            }
-        },
-        handleRemove(file, fileList) {
-            const uploadedUrls = fileList.map(f => f.response?.body || f.url).filter(Boolean);
-            this.editForm.images = uploadedUrls.join(',');
-        },
-        saveEdit() {
-            let product = {
-                name: this.editForm.name,
-                category: this.editForm.category,
-                price: this.editForm.price,
-                stock: this.editForm.stock,
-                unit: this.editForm.unit,
-                description: this.editForm.description,
-                images: this.editForm.images
-            };
-            if (this.isAdmin && this.editForm.farmerId) {
-                product.farmer = { id: this.editForm.farmerId };
-            }
-            $axios.put('/demo/api/product/' + this.editForm.id, product)
-                .then(() => {
-                    this.$message.success('保存成功');
-                    this.editDialogVisible = false;
-                    this.fetchProducts();
-                });
-        },
-        deleteProduct(row) {
-            this.$confirm('确定要删除该商品吗？', '提示', {
-                confirmButtonText: '确定',
-                cancelButtonText: '取消',
-                type: 'warning'
-            }).then(() => {
-                $axios.delete('/demo/api/product/' + row.id)
+            },
+            saveEdit() {
+                let product = {
+                    name: this.editForm.name,
+                    category: this.editForm.category,
+                    price: this.editForm.price,
+                    stock: this.editForm.stock,
+                    unit: this.editForm.unit,
+                    description: this.editForm.description,
+                    images: this.editForm.images
+                };
+                if (this.isAdmin && this.editForm.farmerId) {
+                    product.farmer = { id: this.editForm.farmerId };
+                }
+                $axios.put('/demo/api/product/' + this.editForm.id, product)
                     .then(() => {
-                        this.$message.success('删除成功');
+                        this.$message.success('保存成功');
+                        this.editDialogVisible = false;
                         this.fetchProducts();
                     });
-            });
-        },
-        fetchProducts() {
-            // 农户在商品管理页面只看自己的商品,管理员看所有商品
-            const url = this.isFarmer ? '/demo/api/product/my' : '/demo/api/product/search';
-            $axios.get(url)
-                .then(res => {
-                    this.products = res.data.content || res.data;
-                    if (this.isFarmer && this.products.length === 0) {
-                        this.$message.info('您还没有发布商品');
-                    }
+            },
+            deleteProduct(row) {
+                this.$confirm('确定要删除该商品吗？', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    $axios.delete('/demo/api/product/' + row.id)
+                        .then(() => {
+                            this.$message.success('删除成功');
+                            this.fetchProducts();
+                        });
                 });
-        },
-        fetchFarmers() {
-            $axios.get('/demo/api/user/list?role=ROLE_FARMER')
-                .then(res => {
-                    this.farmers = res.data.content || res.data;
-                });
-        },
-        getFirstImage(item) {
-            if (!item.images) return null;
-            const images = item.images.split(',').map(url => url.trim()).filter(Boolean);
-            return images.length > 0 ? images[0] : null;
+            },
+            fetchProducts() {
+                const url = this.isFarmer ? '/demo/api/product/my' : '/demo/api/product/search';
+                $axios.get(url)
+                    .then(res => {
+                        this.products = res.data.content || res.data;
+                        if (this.isFarmer && this.products.length === 0) {
+                            this.$message.info('您还没有发布商品');
+                        }
+                    });
+            },
+            fetchFarmers() {
+                $axios.get('/demo/api/user/list?role=ROLE_FARMER')
+                    .then(res => {
+                        this.farmers = res.data.content || res.data;
+                    });
+            },
+            getFirstImage(item) {
+                if (!item.images) return null;
+                const images = item.images.split(',').map(url => url.trim()).filter(Boolean);
+                return images.length > 0 ? images[0] : null;
+            }
         }
-    }
-})
+    })
 </script>
 </body>
-</html> 
+</html>
